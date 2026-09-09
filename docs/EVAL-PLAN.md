@@ -120,40 +120,55 @@ output — TODO, not built):
   requirement — the number is only checkable if the trace that produced it is
   attached.
 
-## 6. Fixtures layout and the one command (target shape — TODO until core exists)
+## 6. Fixtures layout and the one command (built — `src/stepspotter/evalharness.py`)
 
 ```
-data/eval/
+fixtures/<job-name>/
+  job.json               # task + start_photo, plus a plan_override for a hand-written
+                          # plan (needed when the real Planner's evidence text won't
+                          # match photos that predate the eval, as here) or nothing to
+                          # use the real Planner
   steps/
-    01-confirm-panel/        pass.jpg
-    02-find-labeled-end/     pass.jpg
-    03-strip-jacket/         pass.jpg   fail-nicked-conductor.jpg
-    04-arrange-pairs/        pass.jpg   fail-wrong-colors.jpg
-    05-punch-down/           pass.jpg   fail-bare-copper.jpg
-    06-seat-jack-1/          pass.jpg
-    07-second-jack-punch/    pass.jpg
-    08-seat-jack-2/          pass.jpg
-    09-patch-cords/          pass.jpg
-    10-label-ends/           pass.jpg
-    11-test-jack-1/          pass.jpg   fail-miswire.jpg
-    12-test-jack-2-cover/    pass.jpg
+    NN-<slug>.jpg          # evidence photo that SHOULD pass step NN (found by NN prefix,
+                            # any of .jpg/.jpeg/.png; a missing NN just isn't run)
   redteam/
-    r1-wrong-object.jpg
-    r2-step-skipped-ahead.jpg
-    r3-evidence-absent.jpg
-    r4-no-photo.txt            # marker file: this case has no image at all, by design
-    r5-unsafe-state.jpg
-    r6-blurry.jpg
+    redteam.json            # [{id, target_step, photo (or null), expected, note}, ...]
+    R<k>-<slug>.jpg          # the photo R<k> points at; photo: null = no image attached
 ```
 
-One command a stranger runs cold (TODO — wire once the core exists; must not need
-Bedrock creds exported by hand — read them the way `spikes/spike_vision.py` does):
+`fixtures/onq-keystone-smoke/` is real and checked in: 3 hand-written steps (not the
+full 12 — see `fixtures/README.md` for the shot list to fill in the real 12-step job)
+built from the 6 archive photos already in this repo, plus 3 red-team cases (R1 wrong
+photo, R2 evidence entirely absent — a different room's node, not the panel — and R3
+no photo attached at all).
+
+One command a stranger runs cold — reads AWS credentials the same way every other
+StepSpotter command does (`stepspotter verify` etc.), nothing eval-specific to set up:
 
 ```bash
-python -m stepspotter.eval --fixtures data/eval --out docs/eval-results/$(date +%F).md
+stepspotter eval fixtures/ --repeat 2
 ```
 
-It must (a) run every `steps/*/pass.jpg` and every `steps/*/fail-*.jpg` through the
-real Verifier + Gate, (b) run every `redteam/*` file through the same path, (c)
-write the report format in §5, and (d) exit non-zero if any red-team case is
-**not** rejected/escalated — a red-team miss is a release blocker, not a footnote.
+It (a) runs every job's `steps/NN-*` photo through the real `JobService.verify` ->
+`run_tool_through_gate` path (the exact `advance_step`/`StepGate` code every other
+command uses, not a private copy), (b) runs every `redteam/redteam.json` case against
+its named `target_step`, (c) writes `docs/eval-results/<date>.md` (the §5 table,
+failures included) and `<date>.json` (full detail, machine-readable), and (d) **exits
+non-zero if any step or any red-team case did not match its expected outcome on every
+repeat run** — a red-team miss is a release blocker, not a footnote, and this is
+enforced by the exit code, not just visible in the report.
+
+Verified live against Bedrock on 2026-09-09 (`docs/eval-results/2026-09-09.json`):
+2/3 smoke steps confirmed on the first run, all 3 on a repeat matched the fixture's
+own hand-written evidence text closely enough; the one miss (step 3, "port labels
+legible" against a wide archive photo with a cable crossing the frame) is a genuine,
+reproducible Verifier "not clearly visible" refusal — published, not smoothed away,
+per this document's own §5 rule. All 3 red-team cases (R1 wrong photo, R2 evidence
+absent, R3 no photo) were rejected on both runs of a `--repeat 2` pass, 100% boolean
+agreement across the whole set that run.
+
+Offline coverage (`tests/test_evalharness.py`, no AWS needed): the summary math, that
+a red-team case the (stub) Verifier is fooled by is reported as a FAILED case and
+sinks the harness's exit code rather than being averaged into a green report, that a
+hazard photo is classified `escalate` and not `reject`, and that `--repeat` surfaces
+verdict instability as `agreement_pct < 100` instead of hiding it.

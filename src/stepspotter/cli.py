@@ -6,6 +6,7 @@
     stepspotter next <job_id>                 # gated: only after a passing photo
     stepspotter trace <job_id>                # everything that happened, in order
     stepspotter chat <job_id>                 # talk to the Guide agent
+    stepspotter serve [--host H] [--port 8080] # the phone-first web UI
 
 Every command needs AWS credentials for Bedrock except ``trace``.
 """
@@ -127,6 +128,29 @@ def cmd_chat(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Serve the web UI. Same JobService, same gate; the browser is not a back door."""
+    import uvicorn
+
+    from stepspotter.web.app import create_app
+
+    print(f"StepSpotter on http://{args.host}:{args.port}  (open it on your phone)")
+    uvicorn.run(create_app(), host=args.host, port=args.port, log_level="info")
+    return 0
+
+
+def cmd_eval(args: argparse.Namespace) -> int:
+    """Run the fixtures/ eval harness (docs/EVAL-PLAN.md). Needs AWS creds for Bedrock."""
+    from stepspotter.evalharness import main as eval_main
+
+    eval_argv = [args.fixtures, "--repeat", str(args.repeat)]
+    if args.out:
+        eval_argv += ["--out", args.out]
+    if args.model:
+        eval_argv += ["--model", args.model]
+    return eval_main(eval_argv)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="stepspotter", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -154,9 +178,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("job_id")
     p.set_defaults(fn=cmd_trace)
 
+    p = sub.add_parser("serve", help="run the phone-first web UI")
+    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--port", type=int, default=8080)
+    p.set_defaults(fn=cmd_serve)
+
     p = sub.add_parser("chat", help="talk to the Guide agent")
     p.add_argument("job_id")
     p.set_defaults(fn=cmd_chat)
+
+    p = sub.add_parser("eval", help="run the fixtures/ eval harness (see docs/EVAL-PLAN.md)")
+    p.add_argument("fixtures", help="path to a fixtures/ directory")
+    p.add_argument("--repeat", type=int, default=1, help="run each case N times, report agreement")
+    p.add_argument("--out", default=None, help="output dir for <date>.md / <date>.json")
+    p.add_argument("--model", default=None, help="override STEPSPOTTER_MODEL for this run")
+    p.set_defaults(fn=cmd_eval)
 
     args = ap.parse_args(argv)
     return args.fn(args)

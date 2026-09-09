@@ -1,0 +1,40 @@
+{
+  "task": "terminate two Cat5e runs into keystone jacks (smoke fixture)",
+  "start_photo": "steps/01-confirm-panel.jpg",
+  "note": "Hand-written plan override, not Planner output. The real Planner writes close-up evidence lines (e.g. a photo of the T568B label on the jack); these 6 archive photos were wide shots taken months earlier for another purpose, so nothing satisfies a Planner-written step. Evidence lines below are written to match exactly what these photos DO show, the same approach as data/demo/onq-keystone/e2e3.py.",
+  "plan_override": {
+    "job_title": "Terminate the office jack (smoke fixture)",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": ["punch-down tool", "cable tester"],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Confirm the low-voltage panel",
+        "action": "Open the structured-wiring panel and check you see only coax and Cat5e cable runs, a splitter and a telecom module, not any circuit breakers.",
+        "do_not_touch": ["the coax splitter's connected cable ends", "the telecom module's punched-down ports"],
+        "stop_condition": "if any breaker or orange/red mains wire is visible in the box, stop and get a licensed electrician",
+        "evidence_required": "the open low-voltage panel box in one wide frame, showing the coax splitter and telecom module with cable runs, and no circuit breakers anywhere in the photo",
+        "highlight_targets": ["coax splitter", "telecom module"]
+      },
+      {
+        "id": 2,
+        "title": "Seat the wire pairs into the office jack",
+        "action": "At the office wall box, hold the keystone jack (the small snap-in socket the cable plugs into) out with its faceplate off, and lay the loose coloured wire pairs from the cable against the jack body before punching them down.",
+        "do_not_touch": ["the blue cable already looped into the wall box", "the wall box mounting screws"],
+        "stop_condition": null,
+        "evidence_required": "the wall box open with the faceplate off, the keystone jack held out (not yet snapped into the plate), and the coloured wire pairs visibly laid against or into the jack body",
+        "highlight_targets": ["keystone jack", "coloured wire pairs"]
+      },
+      {
+        "id": 3,
+        "title": "Confirm the run lands at the telecom module",
+        "action": "At the panel, confirm the Cat5e run for the office jack is punched down into one of the telecom module's numbered ports.",
+        "do_not_touch": ["the SECURITY and TEST/BRIDGE ports", "already-landed runs for other rooms"],
+        "stop_condition": null,
+        "evidence_required": "a close-up of the telecom module showing wire pairs punched into at least one numbered port block, with the port labels legible",
+        "highlight_targets": ["telecom module", "punched-down port"]
+      }
+    ]
+  }
+}

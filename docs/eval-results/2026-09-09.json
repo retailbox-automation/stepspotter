@@ -1,0 +1,144 @@
+{
+  "generated_at": "2026-09-09T14:47:03+00:00",
+  "fixtures_root": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures",
+  "repeat": 2,
+  "summary": {
+    "steps_confirmed": "2/3",
+    "redteam_rejected": "3/3",
+    "all_ok": false
+  },
+  "results": [
+    {
+      "kind": "step",
+      "case_id": "step-1",
+      "job": "onq-keystone-smoke",
+      "target_step": 1,
+      "expected": "pass",
+      "photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures/onq-keystone-smoke/steps/01-confirm-panel.jpg",
+      "outcomes": [
+        "pass",
+        "pass"
+      ],
+      "reasons": [
+        "The open low-voltage panel clearly shows coax runs with F-connectors, a coax splitter, Cat5e cable runs, a telecom/patch module, and no circuit breakers anywhere in the frame. | Step 2 of 3: Seat the wire pairs into the office jack \u2014 At the office wall box, hold the keystone jack (the small snap-in socket the cable plugs into) out with its faceplate off, and lay the loose coloured wire pairs from the cable against the jack body before punching them down.",
+        "The open low-voltage panel clearly shows coax cable runs with F-connectors, a coax splitter, a telecom module, and Cat5e cable runs, with no circuit breakers present anywhere in the photo. | Step 2 of 3: Seat the wire pairs into the office jack \u2014 At the office wall box, hold the keystone jack (the small snap-in socket the cable plugs into) out with its faceplate off, and lay the loose coloured wire pairs from the cable against the jack body before punching them down."
+      ],
+      "latencies_s": [
+        7.47,
+        7.28
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "step",
+      "case_id": "step-2",
+      "job": "onq-keystone-smoke",
+      "target_step": 2,
+      "expected": "pass",
+      "photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures/onq-keystone-smoke/steps/02-seat-pairs.jpg",
+      "outcomes": [
+        "pass",
+        "pass"
+      ],
+      "reasons": [
+        "The wall box is open with the faceplate off, the keystone jack is held out separately, and the coloured wire pairs are clearly laid into the jack body ready for punch-down. | Step 3 of 3: Confirm the run lands at the telecom module \u2014 At the panel, confirm the Cat5e run for the office jack is punched down into one of the telecom module's numbered ports.",
+        "The wall box is open with the faceplate removed, the keystone jack is held out separately, and the coloured wire pairs are clearly visible laid into the jack body before punching down. | Step 3 of 3: Confirm the run lands at the telecom module \u2014 At the panel, confirm the Cat5e run for the office jack is punched down into one of the telecom module's numbered ports."
+      ],
+      "latencies_s": [
+        5.14,
+        5.75
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "step",
+      "case_id": "step-3",
+      "job": "onq-keystone-smoke",
+      "target_step": 3,
+      "expected": "pass",
+      "photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures/onq-keystone-smoke/steps/03-telecom-landing.jpg",
+      "outcomes": [
+        "reject",
+        "reject"
+      ],
+      "reasons": [
+        "The telecom module with punched-down wire pairs is visible, but the port number labels on the left blocks are obscured by cables and the photo is not close enough to confirm legible port numbers as required. | Blocked: step 3 (Confirm the run lands at the telecom module) did not pass the check. The telecom module with punched-down wire pairs is visible, but the port number labels on the left blocks are obscured by cables and the photo is not close enough to confirm legible port numbers as required. Fix that, send a new photo, and we will move on.",
+        "The telecom module is visible with wire pairs punched in, but a large black cable across the foreground obscures most of the port number labels, making them not fully legible as required. | Blocked: step 3 (Confirm the run lands at the telecom module) did not pass the check. The telecom module is visible with wire pairs punched in, but a large black cable across the foreground obscures most of the port number labels, making them not fully legible as required. Fix that, send a new photo, and we will move on."
+      ],
+      "latencies_s": [
+        9.21,
+        8.85
+      ],
+      "agreement_pct": 100.0,
+      "ok": false
+    },
+    {
+      "kind": "redteam",
+      "case_id": "R1",
+      "job": "onq-keystone-smoke",
+      "target_step": 2,
+      "expected": "reject",
+      "photo": "R1-wrong-photo.jpg",
+      "outcomes": [
+        "reject",
+        "reject"
+      ],
+      "reasons": [
+        "The photo shows only the front (plug-in face) of a bare keystone jack \u2014 there is no open wall box, no faceplate removed, and no coloured wire pairs laid against the jack body. | Blocked: step 2 (Seat the wire pairs into the office jack) did not pass the check. The photo shows only the front (plug-in face) of a bare keystone jack \u2014 there is no open wall box, no faceplate removed, and no coloured wire pairs laid against the jack body. Fix that, send a new photo, and we will move on.",
+        "The photo only shows the front RJ-45 port of the keystone jack \u2014 no coloured wire pairs, no open wall box, and no view of the wire-termination side of the jack are visible. | Blocked: step 2 (Seat the wire pairs into the office jack) did not pass the check. The photo only shows the front RJ-45 port of the keystone jack \u2014 no coloured wire pairs, no open wall box, and no view of the wire-termination side of the jack are visible. Fix that, send a new photo, and we will move on."
+      ],
+      "latencies_s": [
+        4.68,
+        5.8
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "redteam",
+      "case_id": "R2",
+      "job": "onq-keystone-smoke",
+      "target_step": 1,
+      "expected": "reject",
+      "photo": "R2-evidence-absent.jpg",
+      "outcomes": [
+        "reject",
+        "reject"
+      ],
+      "reasons": [
+        "There is no open structured-wiring panel visible \u2014 the photo shows loose cables coming out of a hole in the wall, a router or mesh device, and miscellaneous items, but no panel box, coax splitter, or telecom module. | Blocked: step 1 (Confirm the low-voltage panel) did not pass the check. There is no open structured-wiring panel visible \u2014 the photo shows loose cables coming out of a hole in the wall, a router or mesh device, and miscellaneous items, but no panel box, coax splitter, or telecom module. Fix that, send a new photo, and we will move on.",
+        "There is no open structured-wiring panel in this photo \u2014 it shows loose cables coming out of a hole in the wall near what appears to be a router or small device, not an open low-voltage panel box with a coax splitter and telecom module. | Blocked: step 1 (Confirm the low-voltage panel) did not pass the check. There is no open structured-wiring panel in this photo \u2014 it shows loose cables coming out of a hole in the wall near what appears to be a router or small device, not an open low-voltage panel box with a coax splitter and telecom module. Fix that, send a new photo, and we will move on."
+      ],
+      "latencies_s": [
+        4.04,
+        4.7
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "redteam",
+      "case_id": "R3",
+      "job": "onq-keystone-smoke",
+      "target_step": 1,
+      "expected": "reject-no-photo",
+      "photo": null,
+      "outcomes": [
+        "reject-no-photo",
+        "reject-no-photo"
+      ],
+      "reasons": [
+        "Blocked: I have not checked step 1 (Confirm the low-voltage panel) yet. Send a photo of the finished step and I will look at it first.",
+        "Blocked: I have not checked step 1 (Confirm the low-voltage panel) yet. Send a photo of the finished step and I will look at it first."
+      ],
+      "latencies_s": [
+        0.0,
+        0.0
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    }
+  ]
+}

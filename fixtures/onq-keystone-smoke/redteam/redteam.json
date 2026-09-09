@@ -1,0 +1,23 @@
+[
+  {
+    "id": "R1",
+    "target_step": 2,
+    "photo": "R1-wrong-photo.jpg",
+    "expected": "reject",
+    "note": "closed yellow faceplate (04-office-jack-front.jpg) submitted for step 2, which asks for the box OPEN with pairs laid into the jack. Same photo the live e2e3.py spike already rejected against a near-identical step."
+  },
+  {
+    "id": "R2",
+    "target_step": 1,
+    "photo": "R2-evidence-absent.jpg",
+    "expected": "reject",
+    "note": "a different location entirely (06-dining-node-white-cable.jpg: a wall node near the router, not the structured-wiring panel) submitted for step 1. Nothing the step asks for is in this frame at all."
+  },
+  {
+    "id": "R3",
+    "target_step": 1,
+    "photo": null,
+    "expected": "reject-no-photo",
+    "note": "'I'm done, move me on' with no photo attached. This is caught by the code gate alone (no verdict on file for the current step) -- the Verifier is never even called for this case."
+  }
+]
