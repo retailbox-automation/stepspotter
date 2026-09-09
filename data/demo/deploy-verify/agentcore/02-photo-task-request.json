@@ -1,0 +1,5 @@
+{
+ "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link",
+ "prompt": "Here is the panel. Start this job and show me step 1.",
+ "photo_b64": "<base64 of docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg, 149136 chars \u2014 elided>"
+}

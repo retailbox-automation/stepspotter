@@ -6,6 +6,10 @@ until your photo proves the last one was done safely.**
 Built with **Strands Agents** (AWS) for the Agents for Humans hackathon, Everyday
 Agents track.
 
+**Live demo: https://w7ihmvgxxj.us-east-1.awsapprunner.com** — open it on a phone; the
+photo buttons go straight to the rear camera. (AWS App Runner, us-east-1. The Guide
+agent also runs on Amazon Bedrock AgentCore Runtime — see `docs/DEPLOY.md`.)
+
 ## Inspiration
 
 I never owned a home. I grew up in an apartment, and every place I lived in as an

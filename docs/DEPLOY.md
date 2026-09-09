@@ -50,44 +50,159 @@ docker run --rm -p 8080:8080 \
 `HEALTHCHECK` polls `GET /healthz` in-container with urllib (the slim image has no
 curl). The image runs as uid 10001, not root, and writes only to `/data`.
 
-**Not yet built here:** the Docker daemon was not running on this machine during the
-build session, so the Dockerfile is unverified. Build it once before relying on it.
+Both images are built and pushed as of 2026-09-09: the web image runs on App Runner
+(`--platform linux/amd64`) and the Guide image runs on AgentCore Runtime
+(`--platform linux/arm64`, `Dockerfile.agentcore`). See **What is deployed right now**.
 
-## Path A — AWS App Runner (recommended for the judges' URL)
+## What is deployed right now (2026-09-09)
 
-App Runner gives an HTTPS URL, runs any HTTP container on any port, and needs no load
-balancer. Sketch, from an authenticated shell:
+Both halves are live in **us-east-1**, account `7620****7428`, paid from the hackathon
+AWS credits. Everything below was read back from AWS with `describe`/`get` calls, not
+from the exit code of the command that created it.
+
+| What | Name / id | Where |
+|---|---|---|
+| Web UI (phone-first) | App Runner service `stepspotter` | **https://w7ihmvgxxj.us-east-1.awsapprunner.com** |
+| Guide agent | AgentCore Runtime `stepspotter_guide`, id `stepspotter_guide-Af1MWv8fnL`, version 1 | `arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL` |
+| Web image | ECR `stepspotter:web` — linux/amd64, 125.6 MB, `sha256:833d2f07…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
+| Guide image | ECR `stepspotter-agentcore:guide` — linux/arm64, `sha256:c5098995…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore` |
+| Pull role | IAM `stepspotter-apprunner-ecr-access` (`AWSAppRunnerServicePolicyForECRAccess`, trusts `build.apprunner.amazonaws.com`) | IAM |
+| Container role | IAM `stepspotter-apprunner-instance` (inline `stepspotter-bedrock-invoke`, trusts `tasks.apprunner.amazonaws.com`) | IAM |
+| Runtime role | IAM `stepspotter-agentcore-execution` (inline `stepspotter-agentcore-runtime`, trusts `bedrock-agentcore.amazonaws.com`) | IAM |
+| Scaling | App Runner auto-scaling config `stepspotter-single` rev 1 — min 1, max 1, concurrency 100 | App Runner |
+| Spend guard | AWS Budget `stepspotter-hackathon` — $45/month, e-mail at 50 / 80 / 100 % | Billing (global) |
+| Logs | `/aws/apprunner/stepspotter/<service-id>/{application,service}` and `/aws/bedrock-agentcore/runtimes/stepspotter_guide-Af1MWv8fnL-DEFAULT` | CloudWatch |
+
+**There are no AWS access keys anywhere in either deployment.** Both containers get
+Bedrock through a role: `AWS_ACCESS_KEY_ID` is unset in App Runner's environment, and
+the first live job on that URL planned nine steps off a real photo — which only works
+if `bedrock:InvokeModel` reached the model through `stepspotter-apprunner-instance`.
+
+## Path A — AWS App Runner (the judges' URL)
+
+⚠️ **App Runner is closed to new customers** (the banner on every page of its
+developer guide, read 2026-09-09; AWS points new work at *Amazon ECS Express Mode*).
+This account could still create a service, so the path below worked — but do not plan
+a second, different account around it.
+
+App Runner takes an **x86_64** image. Build with an explicit platform on an Apple
+Silicon Mac or the service will fail to start after the push, not before it:
 
 ```bash
-ACC=$(aws sts get-caller-identity --query Account --output text); REGION=us-east-1
-aws ecr create-repository --repository-name stepspotter --region $REGION
-aws ecr get-login-password --region $REGION | docker login --username AWS \
-  --password-stdin $ACC.dkr.ecr.$REGION.amazonaws.com
-docker build -t stepspotter . && docker tag stepspotter:latest $ACC.dkr.ecr.$REGION.amazonaws.com/stepspotter:latest
-docker push $ACC.dkr.ecr.$REGION.amazonaws.com/stepspotter:latest
-
-# One IAM role App Runner assumes to pull from ECR (AWSAppRunnerServicePolicyForECRAccess),
-# and one INSTANCE role the running container assumes, holding bedrock:InvokeModel.
-aws apprunner create-service --service-name stepspotter --region $REGION \
-  --source-configuration '{
-     "AuthenticationConfiguration":{"AccessRoleArn":"arn:aws:iam::'$ACC':role/AppRunnerECRAccessRole"},
-     "AutoDeploymentsEnabled":false,
-     "ImageRepository":{"ImageIdentifier":"'$ACC'.dkr.ecr.'$REGION'.amazonaws.com/stepspotter:latest",
-       "ImageRepositoryType":"ECR",
-       "ImageConfiguration":{"Port":"8080","RuntimeEnvironmentVariables":{"AWS_DEFAULT_REGION":"'$REGION'","STEPSPOTTER_DATA":"/data"}}}}' \
-  --instance-configuration '{"Cpu":"1 vCPU","Memory":"2 GB","InstanceRoleArn":"arn:aws:iam::'$ACC':role/StepSpotterBedrockRole"}' \
-  --health-check-configuration '{"Protocol":"HTTP","Path":"/healthz","Interval":10,"Timeout":5}'
+# creds exported in the SAME command (see Environment above); ACC = account id
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
+  --output type=docker -t stepspotter:apprunner .
+aws ecr create-repository --repository-name stepspotter --region us-east-1
+aws ecr get-login-password --region us-east-1 | docker login --username AWS \
+  --password-stdin $ACC.dkr.ecr.us-east-1.amazonaws.com
+docker tag stepspotter:apprunner $ACC.dkr.ecr.us-east-1.amazonaws.com/stepspotter:web
+docker push $ACC.dkr.ecr.us-east-1.amazonaws.com/stepspotter:web
+aws ecr describe-images --repository-name stepspotter --image-ids imageTag=web
 ```
 
-Two things to decide before this is a real demo URL:
+`--provenance=false --sbom=false` matters: without it buildx pushes an OCI *image
+index* plus an attestation manifest instead of a plain single-arch manifest. The tag
+`stepspotter:web-amd64` in ECR is that first, index-shaped push, kept only as a
+comparison; `stepspotter:web` is the one the service pulls.
 
-* **Storage.** App Runner instances have ephemeral disk and can scale to more than one
-  instance, so `/data` is not shared and not durable. For a demo, pin
-  `MaxSize: 1`. For anything longer-lived, jobs, cards and traces belong in S3 (they
-  are already just files behind `store.py`, which is the seam to change).
-* **Access.** The app has no login. Anything on that URL can start a job that costs
-  Bedrock calls. Keep it unlisted for judging, or put it behind CloudFront with a
-  header check.
+Then the two roles, the scaling config, and the service:
+
+```bash
+aws iam create-role --role-name stepspotter-apprunner-ecr-access \
+  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow",
+    "Principal":{"Service":"build.apprunner.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+aws iam attach-role-policy --role-name stepspotter-apprunner-ecr-access \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+
+aws iam create-role --role-name stepspotter-apprunner-instance \
+  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow",
+    "Principal":{"Service":"tasks.apprunner.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+# inline policy stepspotter-bedrock-invoke:
+#   bedrock:InvokeModel + bedrock:InvokeModelWithResponseStream on
+#   arn:aws:bedrock:*::foundation-model/*
+#   arn:aws:bedrock:*:*:inference-profile/*
+#   arn:aws:bedrock:*:*:application-inference-profile/*
+
+aws apprunner create-auto-scaling-configuration \
+  --auto-scaling-configuration-name stepspotter-single \
+  --min-size 1 --max-size 1 --max-concurrency 100
+
+aws apprunner create-service --service-name stepspotter --region us-east-1 \
+  --source-configuration '{"AuthenticationConfiguration":{"AccessRoleArn":"arn:aws:iam::ACC:role/stepspotter-apprunner-ecr-access"},
+    "AutoDeploymentsEnabled":false,
+    "ImageRepository":{"ImageIdentifier":"ACC.dkr.ecr.us-east-1.amazonaws.com/stepspotter:web","ImageRepositoryType":"ECR",
+      "ImageConfiguration":{"Port":"8080","RuntimeEnvironmentVariables":{"AWS_DEFAULT_REGION":"us-east-1","AWS_REGION":"us-east-1","STEPSPOTTER_DATA":"/tmp/stepspotter","PORT":"8080"}}}}' \
+  --instance-configuration '{"Cpu":"1 vCPU","Memory":"2 GB","InstanceRoleArn":"arn:aws:iam::ACC:role/stepspotter-apprunner-instance"}' \
+  --auto-scaling-configuration-arn <arn of stepspotter-single> \
+  --health-check-configuration '{"Protocol":"HTTP","Path":"/healthz","Interval":10,"Timeout":5,"HealthyThreshold":1,"UnhealthyThreshold":5}'
+```
+
+Why the **inference-profile** ARNs are in that policy: the default model is
+`global.anthropic.claude-sonnet-4-6`, a cross-region inference profile. A call against
+one needs `bedrock:InvokeModel` on the *profile* ARN **and** on the regional
+foundation-model ARN, so a policy naming only the model id fails with an AccessDenied
+that reads as if the model does not exist. **TODO (tighten):** the two `*` wildcards
+should be narrowed to the two model ids actually used once nothing else is added.
+
+Creation took **3 min 21 s** (`CREATE_SERVICE … SUCCEEDED`). Poll rather than guess:
+
+```bash
+aws apprunner describe-service --service-arn <arn> --query 'Service.{Status:Status,Url:ServiceUrl}'
+```
+
+### Proof this URL works, from the public internet
+
+Every response below is saved under `data/demo/deploy-verify/`.
+
+```bash
+URL=https://w7ihmvgxxj.us-east-1.awsapprunner.com
+PHOTO=docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+
+curl -s $URL/healthz
+# {"ok":true,"service":"stepspotter"}                                   HTTP 200, 0.23 s
+
+curl -s -X POST $URL/api/jobs \
+  -F "task=Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link" \
+  -F "photo=@$PHOTO;type=image/jpeg"
+# job-20260909-155841-6307, safety_class diy_ok, 9 steps, 7 tools       HTTP 200, 34 s
+
+curl -s $URL/api/jobs/<job>/card -o card.jpg
+# image/jpeg, 334 KB, 1100x1726 — step 1 drawn on their own photo       HTTP 200, 6.7 s
+
+curl -s -X POST $URL/api/jobs/<job>/photo \
+  -F "photo=@docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg"
+# raw_passed false — "Blue cables are visible but there are no masking
+# tape labels marked 'A' or 'B' attached to either of them."            HTTP 200, 4.0 s
+
+curl -s -X POST $URL/api/jobs/<job>/advance
+# {"blocked":true,"hazard":false,"reason":"Blocked: step 1 … did not pass
+#  the check…"}  — still on step 1 of 9                                 HTTP 200
+
+curl -s $URL/api/jobs/<job>/trace
+# start_job → plan → card → verdict(passed:false) → gate_block
+```
+
+That last row is the point of the whole project: the refusal is a `gate_block` in the
+trace, written by the `StepGate` hook cancelling the tool call, not by the UI hiding a
+button — and it behaves the same way on a public URL as it does in `tests/test_web.py`.
+
+### Storage — the one thing that is not production-shaped
+
+`STEPSPOTTER_DATA=/tmp/stepspotter` on an App Runner instance. Jobs, cards, evidence
+photos and traces live on that instance's ephemeral disk. `MaxSize: 1` keeps a job on
+one instance for the demo, but a redeploy, a scale event or an instance replacement
+loses every job in flight.
+
+**TODO — S3-backed JobStore.** `src/stepspotter/store.py` is the whole seam: it is a
+handful of path helpers plus read/write of JSON and JPEG bytes. Swapping those for an
+S3 client (bucket per environment, key prefix `jobs/<job_id>/`) makes the state durable
+and lets `MaxSize` rise above 1. Nothing above `store.py` needs to change.
+
+### No auth
+
+Anything that can reach that URL can start a job, and every job spends Bedrock tokens.
+It is unlisted, not protected. Keep it that way only for judging, and delete the
+service afterwards (see **Taking it down**).
 
 ## Path B — Amazon Bedrock AgentCore Runtime
 
@@ -105,10 +220,13 @@ shape AgentCore Runtime hosts. The split that makes sense:
   with AgentCore Memory for the session instead of `FileSessionManager`;
 * this web UI → App Runner, calling that endpoint instead of building its own agent.
 
-That is a real refactor (an invocations adapter plus moving photo storage to S3, since
-photos cannot travel through a JSON prompt), not a config change. Un-attempted so far,
-and the AgentCore Runtime quota on this account has not been checked. Build for
-`--platform linux/arm64` if you take it on.
+The invocations adapter half of that is now built and **deployed** —
+`src/stepspotter/agentcore_entry.py`, running as runtime `stepspotter_guide` (photos
+travel as base64, not through S3). What is still un-built is the other half: the web UI
+calling that runtime instead of constructing its own `Agent` in-process. Today the two
+deployments are siblings that share the code, not a client and a server.
+The AgentCore Runtime quota on this account was never a problem — one runtime created
+first try.
 
 ## What proves it works
 
@@ -181,62 +299,151 @@ photo + task turn that planned a 7-step job and came back with step 1 in 44 s
 (planner + marker + card, three Bedrock calls). The container reported `aarch64`.
 Transcripts, including the job trace: `data/demo/agentcore-local/`.
 
-### Deploying it (not done — needs an approved spend)
+### Deploying it — done, 2026-09-09
 
-Two toolchains exist and the Strands docs now point at the newer one:
+Two CLIs wrap this, and neither was used:
 
-* **`@aws/agentcore` (npm)** — "the recommended tool for new projects"; the pip starter
-  toolkit prints `The Starter Toolkit CLI is no longer supported` on every command.
-  Install with `npm install -g @aws/agentcore`. **Not installed or tried here**, so its
-  flags are not written down below — read `agentcore --help` first.
-* **`bedrock-agentcore-starter-toolkit` 0.3.12 (pip)** — installed and interrogated
-  here, so the verbs below are its real ones (`launch` is gone; it is `deploy` now):
+* **`@aws/agentcore` (npm)** — checked live (`npx @aws/agentcore --help`). It is a
+  *project* tool: `create` scaffolds a new AgentCore project and `deploy` provisions it
+  through CDK. Adopting it here would mean restructuring this repo around its layout and
+  bootstrapping CDK, for a runtime that is one API call.
+* **`bedrock-agentcore-starter-toolkit` (pip)** — installed in the spike venv, and it
+  prints `The Starter Toolkit CLI is no longer supported` on every command. Its `deploy`
+  builds ARM64 in CodeBuild, which is only useful when you cannot build ARM64 locally.
+
+This is an Apple Silicon Mac, so the ARM64 image is a native build. The deployment is
+therefore the control-plane API that both CLIs call underneath — fewer moving parts,
+and every step reads back from AWS:
 
 ```bash
-# from the repo root, with AWS creds exported in the SAME command (see above)
-pip install bedrock-agentcore-starter-toolkit
-"$PY" -m pip freeze > requirements.txt      # the toolkit wants a requirements file
+# 1. the ARM64 image (native here; do NOT let this one build amd64 by accident)
+docker buildx build --platform linux/arm64 --provenance=false --sbom=false \
+  --output type=docker -f Dockerfile.agentcore -t stepspotter-agentcore:deploy .
+docker run --rm --platform linux/arm64 stepspotter-agentcore:deploy \
+  python -c "import platform;print(platform.machine())"          # aarch64
 
-agentcore configure --entrypoint src/stepspotter/agentcore_entry.py \
-                    --name stepspotter-guide \
-                    --requirements-file requirements.txt \
-                    --region us-east-1 \
-                    --non-interactive          # execution role + ECR repo auto-created
+aws ecr create-repository --repository-name stepspotter-agentcore --region us-east-1
+docker tag stepspotter-agentcore:deploy $ACC.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore:guide
+docker push $ACC.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore:guide
 
-agentcore deploy                 # cloud CodeBuild builds ARM64 — no local Docker needed
-                                 # --local-build to build with the Docker above instead
-agentcore invoke '{"prompt": "what can you do?"}'
-agentcore status                 # config + runtime details
+# 2. the execution role — trust policy and permissions copied from
+#    docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html
+#    (principal bedrock-agentcore.amazonaws.com, with aws:SourceAccount +
+#     aws:SourceArn conditions; ECR pull, Logs, X-Ray, cloudwatch:PutMetricData in the
+#     bedrock-agentcore namespace, GetWorkloadAccessToken*, bedrock:InvokeModel*)
+aws iam create-role --role-name stepspotter-agentcore-execution ...
+aws iam put-role-policy --role-name stepspotter-agentcore-execution \
+  --policy-name stepspotter-agentcore-runtime ...
+
+# 3. the runtime itself
+aws bedrock-agentcore-control create-agent-runtime \
+  --agent-runtime-name stepspotter_guide \
+  --agent-runtime-artifact '{"containerConfiguration":{"containerUri":"'$ACC'.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore:guide"}}' \
+  --role-arn arn:aws:iam::$ACC:role/stepspotter-agentcore-execution \
+  --network-configuration '{"networkMode":"PUBLIC"}' \
+  --environment-variables '{"STEPSPOTTER_DATA":"/tmp/stepspotter","AWS_REGION":"us-east-1"}' \
+  --description "StepSpotter Guide agent (Strands) behind the AgentCore Runtime contract"
+
+aws bedrock-agentcore-control get-agent-runtime \
+  --agent-runtime-id stepspotter_guide-Af1MWv8fnL --query status     # CREATING -> READY
 ```
 
-`agentcore configure` writes `.bedrock_agentcore.yaml` in the repo root (git-ignore it
-if it ends up holding account ids). **Rollback:** `agentcore destroy --dry-run` first,
-then `agentcore destroy --force` — it removes the runtime endpoint, the agent runtime,
-the ECR images, the CodeBuild project and the execution role (add
-`--delete-ecr-repo` for the repository itself).
+`create-agent-runtime` returned `CREATING` and `get-agent-runtime` reported `READY`
+within a minute. The name has to match `[a-zA-Z][a-zA-Z0-9_]{0,47}`, which is why it is
+`stepspotter_guide` with an underscore and not a hyphen.
 
-**IAM.** The deploying identity here is the IAM *user* `fleetmemory-cli`. It can already
-read AgentCore control-plane state (`aws bedrock-agentcore-control list-agent-runtimes
---region us-east-1` returns `{"agentRuntimes": []}` — nothing deployed on this account
-yet). The rest is **unverified**: a toolkit deploy also needs ECR create/push, CodeBuild
-project + start-build, an S3 source bucket, CloudWatch Logs, `iam:CreateRole` +
-`iam:PassRole` for the execution role it creates, and
-`bedrock-agentcore-control:CreateAgentRuntime` / `bedrock-agentcore:InvokeAgentRuntime`.
-The *execution role* the runtime assumes needs `bedrock:InvokeModel` (the planner,
-marker and verifier all call Bedrock), ECR pull, and Logs write. Expect the first
-`agentcore deploy` to fail on a missing permission and read the error rather than
-pre-granting a wildcard.
+### Invoking it, live
 
-**Cost.** Consumption-based: AgentCore Runtime bills for the CPU/memory a session
-actually consumes (sessions are idle-timed out; `--idle-timeout` defaults to 900 s),
-*plus* the Bedrock tokens each turn spends, plus ECR storage, CodeBuild minutes and
-CloudWatch. The 44 s photo turn above is three model calls, so a demo session is not
-free. Current rates: the Bedrock AgentCore pricing page — do not quote from here.
+`runtimeSessionId` must be 33+ characters — a short one is rejected before the container
+is ever reached. Payloads go through `--cli-binary-format raw-in-base64-out` (inline
+JSON) or `fileb://` (a photo payload is too big to type):
 
-**Verify after deploying.** `agentcore invoke '{"prompt":"what can you do?"}'` (a
-`runtimeSessionId` must be 33+ characters if you call `invoke_agent_runtime` with boto3
-directly), then CloudWatch logs for the runtime, then a photo turn — the answer must
-carry a `job_id` and a `trace_tail`, and the trace is what proves the gate ran.
+```bash
+ARN=arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL
+
+aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn $ARN \
+  --runtime-session-id "stepspotter-deploy-verify-$(date +%s)-aaaaaaaaaa" \
+  --payload '{"prompt":"What can you do?"}' \
+  --cli-binary-format raw-in-base64-out --content-type application/json out.json
+
+aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn $ARN \
+  --runtime-session-id "stepspotter-photo-verify-$(date +%s)-bbbbbbbbbb" \
+  --payload fileb://payload.json --content-type application/json out.json
+# payload.json = {"task": "...", "prompt": "...", "photo_b64": "<base64 jpeg>"}
+```
+
+Both ran green on 2026-09-09 against the deployed runtime, `statusCode` 200:
+
+| Call | Time | Result |
+|---|---|---|
+| `{"prompt":"What can you do?"}` | 12.0 s | the Guide explains the five-step loop; `job_id` null, empty trace |
+| task + `photo_b64` of `03-telecom-module.jpg` | 47.1 s | `job-20260909-155728-ef57`, a **9-step** plan, step 1 of 9 returned with its `evidence_required`, `trace_tail` = `start_job → plan → card` |
+
+Transcripts (and the request shape, with the base64 elided) are saved under
+`data/demo/deploy-verify/agentcore/`.
+
+CloudWatch confirms the container, not just the API:
+`/aws/bedrock-agentcore/runtimes/stepspotter_guide-Af1MWv8fnL-DEFAULT` holds one stream
+per invocation, and the photo turn's stream shows `Tool #1: start_job`,
+`Tool #2: show_step` and the step text — the same tools the CLI and the web UI call.
+
+```bash
+aws logs describe-log-streams \
+  --log-group-name /aws/bedrock-agentcore/runtimes/stepspotter_guide-Af1MWv8fnL-DEFAULT \
+  --order-by LastEventTime --descending --max-items 3
+```
+
+One harmless line appears in those logs at boot: `WARNING: Invalid HTTP request
+received.` — the platform's health probe opening a socket before the app is listening.
+`/ping` answers afterwards, and the runtime went `READY`.
+
+## What it costs (rates read 2026-09-09; per-service pricing pages)
+
+| Line | Rate | Per month here |
+|---|---|---|
+| App Runner provisioned memory | $0.007 / GB-hour, billed while the service is `RUNNING` | 2 GB × 730 h = **$10.22** |
+| App Runner active CPU | $0.064 / vCPU-hour, only while serving a request | demo traffic ≈ **$0.10–1.30** |
+| AgentCore Runtime | $0.0895 / vCPU-hour + $0.00945 / GB-hour, per second, idle CPU free but memory billed for the session's life | ≈ $0.004 per session → **under $3** at demo volume |
+| ECR storage | $0.10 / GB-month; 240 MB + 121 MB stored | **$0.04** |
+| CloudWatch Logs | ingest + storage, tiny volumes | **< $1** |
+| **Bedrock tokens** | per token, Sonnet 4.6 with images; a job start is 3 model calls (planner, marker, verifier) | **the variable** — grows with every visitor |
+
+**Baseline with nobody visiting: about $11/month.** Under the $45 budget, and the
+budget alerts at $22.50 / $36 / $45 exist precisely because Bedrock tokens on an
+unauthenticated URL are the one line nobody controls. Deleting the App Runner service
+after judging drops the standing cost to the $0.04 of ECR storage.
+
+## Taking it down
+
+```bash
+# App Runner (stops the $10.22/month immediately)
+aws apprunner delete-service --service-arn arn:aws:apprunner:us-east-1:ACC:service/stepspotter/cee52fc66d5a4e23b40a9088eed84725
+aws apprunner delete-auto-scaling-configuration \
+  --auto-scaling-configuration-arn <arn of stepspotter-single revision 1>
+
+# AgentCore Runtime
+aws bedrock-agentcore-control delete-agent-runtime --agent-runtime-id stepspotter_guide-Af1MWv8fnL
+
+# images
+aws ecr delete-repository --repository-name stepspotter --force
+aws ecr delete-repository --repository-name stepspotter-agentcore --force
+
+# roles — inline policies and attachments have to go first
+aws iam delete-role-policy --role-name stepspotter-apprunner-instance --policy-name stepspotter-bedrock-invoke
+aws iam delete-role --role-name stepspotter-apprunner-instance
+aws iam detach-role-policy --role-name stepspotter-apprunner-ecr-access \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+aws iam delete-role --role-name stepspotter-apprunner-ecr-access
+aws iam delete-role-policy --role-name stepspotter-agentcore-execution --policy-name stepspotter-agentcore-runtime
+aws iam delete-role --role-name stepspotter-agentcore-execution
+
+# log groups (optional) and the budget
+aws logs delete-log-group --log-group-name /aws/bedrock-agentcore/runtimes/stepspotter_guide-Af1MWv8fnL-DEFAULT
+aws budgets delete-budget --account-id ACC --budget-name stepspotter-hackathon
+```
+
+Delete the App Runner service **before** its ECR repository — a service whose image is
+gone still bills for provisioned memory.
 
 ### Known gaps, stated plainly
 
@@ -246,12 +453,18 @@ carry a `job_id` and a `trace_tail`, and the trace is what proves the gate ran.
   cards and traces belong in S3 for anything real; `store.py` is the seam.
 * **No AgentCore Memory.** The Guide uses `FileSessionManager` keyed by `job_id`, which
   lives in that same disposable `/tmp`.
-* **No observability wiring.** Turning on CloudWatch traces means adding
-  `aws-opentelemetry-distro` and running `opentelemetry-instrument python -m
-  stepspotter.agentcore_entry`; the toolkit does this itself unless you pass
-  `--disable-otel`. Untried here.
-* **The image floats.** `pyproject.toml` pins `strands-agents>=1.54.0`, so the ARM64
-  build pulled 1.55.0 while the local venv is on 1.54.0. Pin before a deploy you
-  intend to keep.
+* **Logs yes, traces no.** CloudWatch *logs* work out of the box — the deployed runtime
+  writes a stream per invocation, tool calls included. OpenTelemetry *traces* are still
+  off: that needs `aws-opentelemetry-distro` and `opentelemetry-instrument python -m
+  stepspotter.agentcore_entry` as the container command. Untried.
+* **The image floats.** `pyproject.toml` asks for `strands-agents>=1.54.0`, so the
+  deployed ARM64 image resolved **1.55.0** while the local venv is on 1.54.0 — i.e. the
+  thing running in AWS is not byte-identical to the thing every local test ran against.
+  Pin the version in `pyproject.toml` before a deploy anyone depends on; left floating
+  here because changing a dependency floor is the repo owner's call, not the deploy
+  lane's.
+* **The web deployment is single-instance by choice.** `stepspotter-single` is min 1 /
+  max 1 so that `/tmp` state stays on one instance. Raising `MaxSize` without the S3
+  store first will scatter jobs across instances and produce 404s.
 * **No auth.** `/invocations` is protected by IAM at the Runtime boundary, not by
   anything in this code.
