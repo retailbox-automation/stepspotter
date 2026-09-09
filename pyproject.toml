@@ -8,6 +8,7 @@ dependencies = [
   "strands-agents>=1.54.0",
   "strands-agents-tools>=0.8.7",
   "pillow>=11",
+  "pypdf>=4",
   "pydantic>=2",
   "fastapi>=0.115",
   "uvicorn>=0.30",

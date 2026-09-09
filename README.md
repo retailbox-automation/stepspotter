@@ -41,7 +41,7 @@ insisting talks it past a step it hasn't seen evidence for.
 
 ## How we built it
 
-Six roles, named like a small crew rather than software layers:
+Seven roles, named like a small crew rather than software layers:
 
 - **Guide** — the agent you talk to; shows the step card, takes your photo.
 - **Planner** — turns the job + a first photo into an ordered list of steps, each
@@ -51,6 +51,9 @@ Six roles, named like a small crew rather than software layers:
   and return a typed verdict: pass, fail, or stop, with a reason.
 - **Gate** — a Strands `BeforeToolCall` hook that cancels the "move to next step"
   tool call in code unless the Verifier already passed the current step.
+- **Researcher** — given a brand and model, finds the manufacturer's manual online
+  and pulls out the assembly pages, so the Planner works from the maker's own words
+  instead of a guess.
 - **Safety fork** — before any of this starts: is this actually a DIY job, or does
   it need a professional?
 
@@ -62,6 +65,43 @@ Verifier's verdict (not free-text parsing), and a `BeforeToolCallEvent` hook for
 the gate itself — verified against strands-agents 1.54.0 by live introspection and
 real Bedrock calls, not from the docs alone (`spikes/SPIKE-A-RESULT.md`,
 `spikes/SPIKE-B-RESULT.md`).
+
+## Grounded in the manufacturer's manual
+
+Name a brand and a model — "assemble my **Westinghouse ePX3030** pressure washer" —
+and StepSpotter goes and finds the maker's own manual before it writes a single step.
+It searches the open web, downloads the PDF, pulls out the pages that actually cover
+assembly, and hands them to the Planner with page markers. The steps then follow the
+manual's order and its part names, and **each step cites the page it came from**, so
+you can check it against the paper in the box. The photo still outranks the manual: if
+what's in front of you doesn't match, the step says so.
+
+```bash
+stepspotter research "Westinghouse ePX3030"     # no AWS credentials needed for this one
+```
+
+```
+product: Westinghouse ePX3030
+status:  found
+manual:  https://cdn.westinghouseoutdoorpower.com/owners_manuals/ePX3030_manual_web.pdf
+pages:   10, 11, 12, 13, 14
+```
+
+Same job, with and without the manual, run live end to end:
+[`docs/research-epx3030-2026-09-09.md`](docs/research-epx3030-2026-09-09.md). Short
+version — without it, the plan never mentions the handle, the two mounts or the four
+screws, and reports "no tools required" for a job that needs a screwdriver.
+
+- **No API key.** DuckDuckGo's HTML endpoint and `pypdf`; a stranger can run it cold.
+- **Switch it off** with `STEPSPOTTER_RESEARCH=0` — it returns before any socket
+  opens. The test suite sets exactly that, so nothing offline depends on a search
+  engine.
+- **Nothing to look up, nothing to fetch.** No brand-and-model in what you typed
+  means no network call at all.
+- **Cached** per product under `data/manuals/<product>.json` (plus the PDF itself), so
+  the second run of the same job is instant and offline.
+- **Never fatal.** A dead search engine, a scanned manual with no text layer, a 404 —
+  each comes back as a status, and the repair carries on without it.
 
 ## The checkable number
 
@@ -127,8 +167,9 @@ polite.
 | Piece | Status |
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
-| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`, 40 tests passing (`python -m pytest -q`) |
+| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`, 90 tests passing (`python -m pytest -q`) |
 | Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/` |
+| Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/` |
 | Docker image | ✅ Builds locally (`docker build .`) |
 | Deploy (live URL) | ⏳ Pending — see `docs/DEPLOY.md` |
@@ -161,7 +202,7 @@ needed on the account these spikes ran on.
 Run what's real today, offline, no AWS needed:
 
 ```bash
-python -m pytest -q                      # 40 passed, 1 skipped — the full suite
+python -m pytest -q                      # 90 passed, 1 skipped — the full suite
 python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract on its own
 ```
 

@@ -15,4 +15,8 @@ Requires-Dist: python-multipart>=0.0.9
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: httpx>=0.27; extra == "dev"
+Provides-Extra: agentcore
+Requires-Dist: bedrock-agentcore>=1.22.0; extra == "agentcore"
+Provides-Extra: shots
+Requires-Dist: playwright>=1.47; extra == "shots"
 Dynamic: license-file

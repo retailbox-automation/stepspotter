@@ -1,5 +1,6 @@
 """stepspotter — the command line.
 
+    stepspotter research "<brand and model>"   # find the maker's manual for a product
     stepspotter plan "<what you want to do>" <photo.jpg>
     stepspotter step <job_id>                 # draw the current step on your photo
     stepspotter verify <job_id> <photo.jpg>   # does this photo prove the step?
@@ -8,7 +9,8 @@
     stepspotter chat [job_id] [--session S]   # talk to the Guide; the chat is remembered
     stepspotter serve [--host H] [--port 8080] # the phone-first web UI
 
-Every command needs AWS credentials for Bedrock except ``trace``.
+Every command needs AWS credentials for Bedrock except ``trace`` and ``research``
+(that one only reads the open web).
 """
 
 from __future__ import annotations
@@ -53,6 +55,13 @@ def cmd_plan(args: argparse.Namespace) -> int:
         return 0
     if plan.tools_needed:
         print("tools:  " + ", ".join(plan.tools_needed))
+    manual = next((u for u in plan.sources if u.lower().endswith(".pdf")), None)
+    if manual:
+        pages = _manual_pages(state.job_id)
+        print(f"manual: {manual}" + (f" (pages {pages})" if pages else ""))
+    for url in plan.sources:
+        if url != manual:
+            print(f"video:  {url}")
     print()
     for s in plan.steps:
         print(f"  {s.id}. {s.title}")
@@ -62,8 +71,41 @@ def cmd_plan(args: argparse.Namespace) -> int:
         if s.stop_condition:
             print(f"     stop if: {s.stop_condition}")
         print(f"     photo must show: {s.evidence_required}")
+        print(f"     source: {s.source or '(the photo)'}")
     print(f"\nNext: stepspotter step {state.job_id}")
     return 0
+
+
+def _manual_pages(job_id: str) -> str:
+    """The pages the planner actually read, taken off the job's own trace."""
+    for row in store.read_trace(job_id):
+        if row.get("event") == "research" and row.get("pages"):
+            return ", ".join(str(p) for p in row["pages"])
+    return ""
+
+
+def cmd_research(args: argparse.Namespace) -> int:
+    """Find the manufacturer's manual for a product. No Bedrock, no AWS credentials."""
+    from stepspotter import research
+
+    found = research.research_product(args.product, use_cache=not args.fresh)
+    print(f"product: {found.product or '(not recognised)'}")
+    print(f"status:  {found.status}")
+    if found.note:
+        print(f"note:    {found.note}")
+    if found.manual_url:
+        print(f"manual:  {found.manual_url}")
+        print(f"saved:   {found.manual_path}")
+        print("pages:   " + ", ".join(str(p) for p in found.manual_pages))
+        head = found.excerpt[: args.chars]
+        print(f"\n--- excerpt ({len(found.excerpt)} chars, first {len(head)}) ---")
+        print(head)
+        print("--- end excerpt ---")
+    if found.videos:
+        print("\nvideos:")
+        for v in found.videos:
+            print(f"  {v.title or 'video'}\n    {v.url}")
+    return 0 if found.status == "found" else 1
 
 
 def cmd_step(args: argparse.Namespace) -> int:
@@ -210,6 +252,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("task")
     p.add_argument("photo")
     p.set_defaults(fn=cmd_plan)
+
+    p = sub.add_parser("research", help="find the maker's manual for a brand and model")
+    p.add_argument("product", help='e.g. "Westinghouse ePX3030"')
+    p.add_argument("--fresh", action="store_true", help="ignore the cached lookup")
+    p.add_argument("--chars", type=int, default=1200, help="how much of the excerpt to print")
+    p.set_defaults(fn=cmd_research)
 
     p = sub.add_parser("step", help="draw the current step on your photo")
     p.add_argument("job_id")

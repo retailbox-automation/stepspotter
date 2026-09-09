@@ -8,6 +8,7 @@ src/stepspotter/evalharness.py
 src/stepspotter/gate.py
 src/stepspotter/guide.py
 src/stepspotter/marker.py
+src/stepspotter/memory.py
 src/stepspotter/models.py
 src/stepspotter/planner.py
 src/stepspotter/store.py
@@ -24,9 +25,11 @@ src/stepspotter/web/app.py
 src/stepspotter/web/gated.py
 src/stepspotter/web/page.py
 src/stepspotter/web/photos.py
+tests/test_agentcore_entry.py
 tests/test_card.py
 tests/test_evalharness.py
 tests/test_gate.py
+tests/test_guide_chat.py
 tests/test_guide_gate.py
 tests/test_models.py
 tests/test_planner_integration.py

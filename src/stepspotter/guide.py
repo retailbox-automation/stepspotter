@@ -9,6 +9,7 @@ test that goes through the model is testing the model's manners, not the gate
 
 Tools:
     start_job(task, photo_path)    -> plan the job, or refuse it to a professional
+    find_manual(product)           -> the manufacturer's manual for a named model
     show_step(job_id)              -> render the card for the current step
     submit_photo(job_id, photo)    -> verify, store the verdict, answer in plain words
     advance_step(job_id, step_id)  -> GATED
@@ -17,6 +18,7 @@ Tools:
 
 from __future__ import annotations
 
+import inspect
 import re
 from pathlib import Path
 from typing import Any, Callable
@@ -24,9 +26,10 @@ from typing import Any, Callable
 from strands import Agent, tool
 from strands.hooks import BeforeToolCallEvent, HookRegistry
 
-from stepspotter import marker, memory, planner, store, verifier
+from stepspotter import marker, memory, planner, research, store, verifier
 from stepspotter.gate import StepGate
 from stepspotter.models import Box, JobState, Plan, Step, StepVerdict
+from stepspotter.research import Research
 
 GUIDE_SYSTEM = """You are StepSpotter. You walk one person through one home repair,
 one small step at a time, using photos of their own thing.
@@ -40,6 +43,9 @@ How you work:
    the same call again.
  - If anything looks unsafe — heat, swelling, burning smell, water, bare live wire —
    call escalate immediately, before anything else.
+ - When the person names a brand and model, the plan is already grounded in the
+   manufacturer's own manual, found online; if they ask where a step came from, tell
+   them which manual and which page. find_manual looks a model up on its own.
 
 How you talk: short, plain, kind. No jargon unless you explain it in the same
 sentence. Never tell someone a step is done when you have not seen it."""
@@ -55,6 +61,17 @@ lecture them. If a tool comes back with an error, read the error out to them exa
 as it is and stop. If anything looks unsafe, call escalate first."""
 
 
+def _accepts_research(fn: Callable[..., Plan]) -> bool:
+    """Does this plan function want a ``research=`` keyword? Signature, not guesswork."""
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):  # builtins and C callables have no signature
+        return False
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return True
+    return "research" in params
+
+
 class JobService:
     """Everything a job needs, with the model calls injectable so tests can run offline."""
 
@@ -65,13 +82,18 @@ class JobService:
         locate_fn: Callable[..., list[Box]] | None = None,
         model_id: str | None = None,
         use_house_memory: bool = True,
+        research_fn: Callable[[str], Research] | None = None,
+        use_research: bool = True,
     ) -> None:
         self.use_house_memory = use_house_memory
         self.plan_fn = plan_fn or planner.plan_job
         self.verify_fn = verify_fn or verifier.verify_step
         self.locate_fn = locate_fn or marker.locate
+        self.research_fn = research_fn or research.research_product
+        self.use_research = use_research
         self.model_id = model_id
         self._cache: dict[str, JobState] = {}
+        self._plan_takes_research = _accepts_research(self.plan_fn)
 
     # -- state ---------------------------------------------------------------
     def get(self, job_id: str | None) -> JobState | None:
@@ -99,7 +121,13 @@ class JobService:
         prompt_task = memory.augment_task(task) if self.use_house_memory else task
         if prompt_task != task:
             store.trace(job_id, "house_recall", context=prompt_task[len(task) :].strip())
-        plan = self.plan_fn(prompt_task, photo_path, self.model_id)
+        found = self.research(job_id, task)
+        # Older plan_fns (and every test fake written before research existed) take
+        # three positional arguments; only pass the research to one that asked for it.
+        if self._plan_takes_research:
+            plan = self.plan_fn(prompt_task, photo_path, self.model_id, research=found)
+        else:
+            plan = self.plan_fn(prompt_task, photo_path, self.model_id)
         state = JobState(
             job_id=job_id, task=task, start_photo=str(photo_path), plan=plan
         )
@@ -113,6 +141,27 @@ class JobService:
             titles=[s.title for s in plan.steps],
         )
         return state
+
+    def research(self, job_id: str, task: str) -> Research | None:
+        """Look the product up before planning. Never fatal: None just means no manual."""
+        if not self.use_research or self.research_fn is None:
+            return None
+        try:
+            found = self.research_fn(task)
+        except Exception as exc:  # noqa: BLE001 - a failed lookup is not a failed repair
+            store.trace(job_id, "research", status="failed", note=str(exc))
+            return None
+        store.trace(
+            job_id,
+            "research",
+            status=found.status,
+            product=found.product,
+            manual_url=found.manual_url,
+            pages=list(found.manual_pages),
+            videos=[v.url for v in found.videos],
+            note=found.note,
+        )
+        return found
 
     def card(
         self,
@@ -193,11 +242,13 @@ def _step_text(state: JobState, step: Step) -> str:
     if step.stop_condition:
         lines.append("Stop if: " + step.stop_condition)
     lines.append("Next photo must show: " + step.evidence_required)
+    if step.source:
+        lines.append("From: " + step.source)
     return "\n".join(lines)
 
 
 def build_tools(service: JobService) -> list[Any]:
-    """The five tools, bound to one service."""
+    """The six tools, bound to one service."""
 
     @tool
     def start_job(task: str, photo_path: str) -> str:
@@ -222,6 +273,20 @@ def build_tools(service: JobService) -> list[Any]:
             f"job_id={state.job_id}\n{plan.job_title} — {state.total} steps.\n"
             f"{tools_line}\n\n{_step_text(state, state.plan.steps[0])}"
         ).strip()
+
+    @tool
+    def find_manual(product: str) -> str:
+        """Look up the manufacturer's manual for a named product, plus any videos of it.
+
+        Args:
+            product: the brand and model the person named, e.g. "Westinghouse ePX3030".
+        """
+        lookup = service.research_fn or research.research_product
+        try:
+            found = lookup(product)
+        except Exception as exc:  # noqa: BLE001
+            return f"I could not look that up just now ({exc})."
+        return research.summarize(found)
 
     @tool
     def show_step(job_id: str) -> str:
@@ -297,7 +362,7 @@ def build_tools(service: JobService) -> list[Any]:
             "Nothing else happens on this job until they answer."
         )
 
-    return [start_job, show_step, submit_photo, advance_step, escalate]
+    return [start_job, find_manual, show_step, submit_photo, advance_step, escalate]
 
 
 def build_agent(

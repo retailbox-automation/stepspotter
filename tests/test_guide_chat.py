@@ -209,3 +209,128 @@ def test_house_memory_can_be_switched_off_for_a_run():
         "hang a shelf", "shelf.jpg"
     )
     assert seen["task"] == "hang a shelf"
+
+
+# -- research reaching the planner -------------------------------------------------
+
+
+def a_research() -> "Research":
+    from stepspotter.research import Research, VideoHit
+
+    return Research(
+        product="Westinghouse ePX3030",
+        status="found",
+        manual_url="https://cdn.westinghouseoutdoorpower.com/owners_manuals/ePX3030_manual_web.pdf",
+        manual_path="/tmp-not-used/epx3030.pdf",
+        manual_pages=[10, 11, 12],
+        excerpt="[p.11]\nASSEMBLY\nFit the handle with two screws.",
+        videos=[VideoHit(title="ePX3030 unboxing", url="https://www.youtube.com/watch?v=abc")],
+    )
+
+
+def test_the_manual_lookup_reaches_a_planner_that_asked_for_it():
+    """A plan_fn with a research= parameter gets the manual; the trace records it."""
+    seen = {}
+
+    def capture(task, photo, model_id=None, research=None):
+        seen["research"] = research
+        return a_plan()
+
+    service = JobService(
+        plan_fn=capture,
+        locate_fn=lambda *a, **k: [],
+        research_fn=lambda task: a_research(),
+        use_house_memory=False,
+    )
+    state = service.start("assemble my Westinghouse ePX3030 pressure washer", "start.jpg")
+
+    assert seen["research"].manual_pages == [10, 11, 12]
+
+    from stepspotter import store
+
+    row = next(r for r in store.read_trace(state.job_id) if r["event"] == "research")
+    assert row["status"] == "found"
+    assert row["product"] == "Westinghouse ePX3030"
+    assert row["pages"] == [10, 11, 12]
+
+
+def test_a_planner_from_before_research_existed_is_still_called_correctly():
+    """The old three-positional-argument plan_fn must not start blowing up."""
+    calls = []
+
+    def old_style(task, photo, model_id=None):
+        calls.append((task, photo, model_id))
+        return a_plan()
+
+    service = JobService(
+        plan_fn=old_style,
+        locate_fn=lambda *a, **k: [],
+        research_fn=lambda task: a_research(),
+        use_house_memory=False,
+    )
+    service.start("assemble my Westinghouse ePX3030 pressure washer", "start.jpg")
+    assert calls == [("assemble my Westinghouse ePX3030 pressure washer", "start.jpg", None)]
+
+
+def test_research_can_be_switched_off_per_service():
+    called = []
+    service = JobService(
+        plan_fn=lambda task, photo, model_id=None: a_plan(),
+        locate_fn=lambda *a, **k: [],
+        research_fn=lambda task: called.append(task) or a_research(),
+        use_research=False,
+    )
+    service.start("assemble my Westinghouse ePX3030 pressure washer", "start.jpg")
+    assert called == []
+
+
+def test_a_broken_lookup_never_stops_the_repair():
+    def boom(task):
+        raise RuntimeError("the search engine fell over")
+
+    service = JobService(
+        plan_fn=lambda task, photo, model_id=None, research=None: a_plan(),
+        locate_fn=lambda *a, **k: [],
+        research_fn=boom,
+    )
+    state = service.start("assemble my Westinghouse ePX3030 pressure washer", "start.jpg")
+    assert state.total == 2  # the plan still happened
+
+    from stepspotter import store
+
+    row = next(r for r in store.read_trace(state.job_id) if r["event"] == "research")
+    assert row["status"] == "failed"
+
+
+def test_the_find_manual_tool_answers_in_plain_words(job):
+    _service, _state, _gate, _tools = job
+    service = JobService(
+        plan_fn=lambda task, photo, model_id=None: a_plan(),
+        locate_fn=lambda *a, **k: [],
+        research_fn=lambda product: a_research(),
+    )
+    tools = build_tools(service)
+    gate = StepGate(state_for=service.get)
+    res = run_tool_through_gate(gate, tools, "find_manual", {"product": "Westinghouse ePX3030"})
+
+    assert res["status"] == "success"
+    assert "ePX3030_manual_web.pdf" in res["content"]
+    assert "10, 11, 12" in res["content"]
+    assert "youtube.com" in res["content"]
+
+
+def test_a_step_source_survives_being_saved_and_loaded():
+    """Step.source and Plan.sources are part of the job on disk, not just the prompt."""
+    from stepspotter import store
+    from stepspotter.models import JobState
+
+    plan = a_plan()
+    plan.sources = ["https://example.test/manual.pdf"]
+    plan.steps[0].source = "manual p.11 FIG.7"
+    state = JobState(job_id="job-20260909-090000-aaaa", task="t", start_photo="p.jpg", plan=plan)
+    store.save(state)
+
+    back = store.load(state.job_id)
+    assert back.plan.steps[0].source == "manual p.11 FIG.7"
+    assert back.plan.steps[1].source is None
+    assert back.plan.sources == ["https://example.test/manual.pdf"]

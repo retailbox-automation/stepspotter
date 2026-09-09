@@ -1,7 +1,7 @@
 # Architecture
 
-StepSpotter is one repair walked through by six roles, named the way a human crew
-would name them — not by software layer. Two of the six are verified working code
+StepSpotter is one repair walked through by seven roles, named the way a human crew
+would name them — not by software layer. Two of them are verified working code
 today (Spike A, Spike B); the rest are the plan the spikes exist to de-risk.
 **Anything below marked `TODO` is not built yet** — no claim here implies code that
 does not exist.
@@ -16,6 +16,7 @@ does not exist.
 | **Verifier** | Looks at your evidence photo and says pass/fail/stop, with a reason. | **Built + spiked** (`src/stepspotter/verifier.py`, Spike A) |
 | **Gate** | Physically will not let the Guide say "next step" unless the Verifier already said pass for *this* step. | **Built + spiked** (`src/stepspotter/gate.py`, Spike B) |
 | **Safety fork** | Before any of the above starts: is this even a DIY job, or does it need a professional (mains electrical inside a panel, gas, roofing, structural)? | `TODO` (design only, see `diy-vs-vendor-gate.md` reference in the concept doc) |
+| **Researcher** | Given a brand and model, finds the manufacturer's own manual online, downloads it and pulls out the assembly pages, so the Planner writes from the maker's words and can cite the page. | **Built** (`src/stepspotter/research.py`; evidence: `research-epx3030-2026-09-09.md`) |
 | **Memory** | Remembers what's already been done in this house, so the next job doesn't start from zero — and keeps the conversation itself when the terminal is closed mid-repair. | **Built** (`src/stepspotter/memory.py`; the conversation via `strands.session.FileSessionManager`) |
 
 ## Which Strands feature, at which step, instead of what alternative

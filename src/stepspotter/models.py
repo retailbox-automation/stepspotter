@@ -73,6 +73,11 @@ class Step(BaseModel):
         default_factory=list,
         description="objects to mark on the person's photo for this step",
     )
+    source: str | None = Field(
+        default=None,
+        description="where this step comes from, e.g. 'manual p.11 FIG.7'; "
+        "null when it comes from the photo alone",
+    )
 
     @field_validator("action")
     @classmethod
@@ -95,6 +100,11 @@ class Plan(BaseModel):
     )
     tools_needed: list[str] = Field(default_factory=list)
     steps: list[Step] = Field(default_factory=list)
+    sources: list[str] = Field(
+        default_factory=list,
+        description="filled in by the system after planning (manual and video URLs); "
+        "leave this empty",
+    )
 
     @property
     def is_diy(self) -> bool:

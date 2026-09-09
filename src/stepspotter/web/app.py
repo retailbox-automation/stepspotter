@@ -50,6 +50,7 @@ def _step_dict(state: JobState) -> dict | None:
         "do_not_touch": list(step.do_not_touch),
         "stop_condition": step.stop_condition,
         "evidence_required": step.evidence_required,
+        "source": step.source,
     }
 
 
@@ -64,6 +65,7 @@ def _summary(state: JobState) -> dict:
         "safety_class": plan.safety_class,
         "vendor_reason": plan.vendor_reason,
         "tools_needed": list(plan.tools_needed),
+        "sources": list(plan.sources),
         "total": state.total,
         "step_number": None if step is None else state.current + 1,
         "done": state.done,

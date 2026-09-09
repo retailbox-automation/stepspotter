@@ -27,8 +27,15 @@ def photo() -> str:
 
 @pytest.fixture(autouse=True)
 def isolated_data(tmp_path, monkeypatch):
-    """Point every job/trace/card write at a tmp dir for the duration of one test."""
+    """Point every job/trace/card write at a tmp dir for the duration of one test.
+
+    ``STEPSPOTTER_RESEARCH=0`` goes with it: the default JobService now looks a
+    product up on the open web before planning, and a test suite must not depend on
+    a search engine. A test that wants the lookup injects its own fake search, which
+    the switch does not touch.
+    """
     monkeypatch.setenv("STEPSPOTTER_DATA", str(tmp_path / "data"))
+    monkeypatch.setenv("STEPSPOTTER_RESEARCH", "0")
     yield tmp_path / "data"
 
 

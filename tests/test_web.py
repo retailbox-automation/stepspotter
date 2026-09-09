@@ -38,6 +38,7 @@ def _plan(task: str, photo: str, model_id=None) -> Plan:
                 stop_condition="if anything is hot or smells burnt, stop and get a person",
                 evidence_required="all eight wires seated in the jack, no loose ends",
                 highlight_targets=["blue cable", "keystone jack"],
+                source="manual p.11 FIG.7",
             ),
             Step(
                 id=2,
@@ -46,6 +47,7 @@ def _plan(task: str, photo: str, model_id=None) -> Plan:
                 evidence_required="the tester showing all pairs lit",
             ),
         ],
+        sources=["https://example.test/manual.pdf", "https://www.youtube.com/watch?v=abc"],
     )
 
 
@@ -181,3 +183,17 @@ def test_upload_is_rotated_upright_and_downscaled(isolated_data, tmp_path):
     big.save(buf, format="JPEG", exif=Image.Exif())
     out = save_upload(buf.getvalue(), tmp_path / "u.jpg")
     assert max(Image.open(out).size) == 1600
+
+
+def test_the_page_is_told_where_the_step_came_from(client):
+    """The manual link and the step's page live in the JSON the page renders from."""
+    job = _new_job(client)
+
+    assert job["step"]["source"] == "manual p.11 FIG.7"
+    assert job["sources"] == [
+        "https://example.test/manual.pdf",
+        "https://www.youtube.com/watch?v=abc",
+    ]
+    # and the page has somewhere to put both
+    body = client.get("/").text
+    assert 'id="stepSource"' in body and 'id="manualLine"' in body

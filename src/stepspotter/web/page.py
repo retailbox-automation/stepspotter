@@ -102,8 +102,10 @@ PAGE_HTML = r"""<!doctype html>
     <img id="cardImg" alt="your photo with this step marked on it">
     <p class="muted" id="cardNote">Boxes show roughly where to look, not exactly.</p>
     <p class="action" id="stepAction"></p>
+    <p class="muted" id="stepSource"></p>
     <div id="stepTags"></div>
   </div>
+  <p class="muted" id="manualLine"></p>
   <div id="verdictBox"></div>
   <div id="blockBox"></div>
   <button id="photoBtn">I did it — take photo</button>
@@ -205,6 +207,11 @@ function render(){
   $("stepNo").textContent = "Step " + JOB.step_number + " of " + JOB.total;
   $("stepTitle").textContent = s.title;
   $("stepAction").textContent = s.action;
+  $("stepSource").textContent = s.source ? "Source: " + s.source : "";
+  const manual = (JOB.sources || []).filter(u => /\.pdf$/i.test(u))[0];
+  $("manualLine").innerHTML = manual
+    ? 'Manual: <a href="' + esc(manual) + '" target="_blank" rel="noopener">' + esc(manual) + '</a>'
+    : "";
   const img = $("cardImg");
   img.src = JOB.card_url + "&t=" + Date.now();
   img.onerror = () => { img.style.display = "none"; $("cardNote").textContent = "The marked photo could not be drawn; the words below still apply."; };
