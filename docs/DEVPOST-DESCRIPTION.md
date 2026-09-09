@@ -119,20 +119,27 @@ stays polite about it.
 
 ## What's next
 
-- Finish wiring the Guide/Planner/Marker roles as agent-as-tool calls, so a
-  single Guide agent delegates to independent Planner, Marker, and Verifier
-  agents rather than one large prompt doing all three jobs.
-- A separate safety-fork check that runs before the Planner ever produces a
-  step for a job — refusing to plan mains electrical, gas, roofing, or
-  structural work at all and pointing to a professional instead.
-- A phone-first web UI on a live, hosted URL.
-- Optional: memory of what's already been done in a given house, across jobs,
-  so the next repair doesn't start from zero.
+- A "what do I even need to do?" mode. I did not know a Florida house needs its
+  AC condensate line cleared, its dryer vent emptied, or its water heater valve
+  tested until things went wrong. The Planner already knows the house from the
+  job memory; the next step is to let it propose this month's checkup as a
+  list of small, photo-verified jobs.
+- Job state in S3 instead of the instance's /tmp, so a job survives a restart
+  of the hosted app.
+- Tighter IAM for the hosted agent (scope Bedrock permissions to the two model
+  profiles it actually uses) and sign-in on the public URL.
+- Better highlights on the photo: today the boxes are a rough hint from the
+  vision model; a segmentation pass would make "this cable, not that one"
+  exact.
+- A way to clear a remembered hazard ("an electrician checked it") so the
+  house memory does not keep sending every later job to a pro.
 
 ## Built with
 
 Strands Agents SDK (Python), Amazon Bedrock (Claude models — Sonnet for
-vision/planning, Haiku for cheap turns), Python, FastAPI, PIL, pytest.
+vision/planning, Haiku for cheap turns), Amazon Bedrock AgentCore Runtime
+(the Guide agent), AWS App Runner (the phone web app), Python, FastAPI, PIL,
+pytest.
 
 ## Testing instructions
 
