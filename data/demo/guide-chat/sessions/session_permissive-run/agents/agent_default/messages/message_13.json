@@ -1,0 +1,26 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "🚨 **Stop — do not touch anything in that enclosure.**\n\nA warm, burnt-smelling connector is a serious safety hazard, even on low-voltage wiring. Please:\n\n1. **Stay away from the panel.**\n2. **Call a licensed electrician immediately** to diagnose and fix the fault before any work continues.\n\nOnce an electrician has inspected and cleared it, come back and we'll get your cabling job started safely."
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 2361,
+        "outputTokens": 104,
+        "totalTokens": 2465
+      },
+      "metrics": {
+        "latencyMs": 2394,
+        "timeToFirstByteMs": 1065
+      }
+    },
+    "tracking_id": "e5dce2ca-12ae-410f-af00-6a21f75f0b6a"
+  },
+  "message_id": 13,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:16:31.035107+00:00",
+  "updated_at": "2026-09-09T15:16:31.035123+00:00"
+}

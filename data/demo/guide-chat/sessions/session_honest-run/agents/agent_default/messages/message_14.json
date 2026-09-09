@@ -1,0 +1,23 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "toolResult": {
+          "toolUseId": "tooluse_L04tnJ7eGGln1bmB7V4TTp",
+          "status": "success",
+          "content": [
+            {
+              "text": "Stopped and passed to a person: User reports one of the connectors feels warm and smells burnt. Possible overheating or electrical fault on the low-voltage wiring. Nothing else happens on this job until they answer."
+            }
+          ]
+        }
+      }
+    ],
+    "tracking_id": "5ce4e6ca-b72c-43c1-a934-18402fa333e3"
+  },
+  "message_id": 14,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:15:41.928069+00:00",
+  "updated_at": "2026-09-09T15:15:41.928075+00:00"
+}

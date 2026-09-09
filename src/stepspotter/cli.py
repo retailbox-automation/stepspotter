@@ -5,7 +5,7 @@
     stepspotter verify <job_id> <photo.jpg>   # does this photo prove the step?
     stepspotter next <job_id>                 # gated: only after a passing photo
     stepspotter trace <job_id>                # everything that happened, in order
-    stepspotter chat <job_id>                 # talk to the Guide agent
+    stepspotter chat [job_id] [--session S]   # talk to the Guide; the chat is remembered
     stepspotter serve [--host H] [--port 8080] # the phone-first web UI
 
 Every command needs AWS credentials for Bedrock except ``trace``.
@@ -17,7 +17,16 @@ import argparse
 import sys
 
 from stepspotter import store
-from stepspotter.guide import JobService, build_agent, build_tools, run_tool_through_gate
+from stepspotter.guide import (
+    GUIDE_SYSTEM,
+    GUIDE_SYSTEM_PERMISSIVE,
+    JobService,
+    build_agent,
+    build_tools,
+    job_id_in_session,
+    run_tool_through_gate,
+    say,
+)
 from stepspotter.gate import StepGate
 
 
@@ -112,19 +121,61 @@ def cmd_trace(args: argparse.Namespace) -> int:
 
 
 def cmd_chat(args: argparse.Namespace) -> int:
-    agent, service, _gate = build_agent(session_id=args.job_id)
-    state = service.get(args.job_id)
+    """Talk to the Guide.
+
+    The conversation is kept by a Strands ``FileSessionManager`` under the session id,
+    so quitting mid-repair and running the same command tomorrow carries on where it
+    stopped — including which job it was about, read back out of the restored messages.
+
+    ``--say`` runs fixed turns and exits, which is how the demo transcripts under
+    ``data/demo/guide-chat/`` are produced; without it this is a plain REPL.
+    """
+    session_id = args.session or args.job_id or "house"
+    system = GUIDE_SYSTEM_PERMISSIVE if args.permissive else GUIDE_SYSTEM
+    agent, service, _gate = build_agent(session_id=session_id, system_prompt=system)
+
+    job_id = args.job_id or job_id_in_session(agent)
+    state = service.get(job_id)
+    header = [f"session: {session_id}" + ("  [permissive prompt]" if args.permissive else "")]
     if state is not None:
-        print(state.describe_current())
-    print("Talk to the Guide. Empty line or Ctrl-D to leave.\n")
-    while True:
-        try:
-            line = input("you> ").strip()
-        except EOFError:
-            break
-        if not line:
-            break
-        print(f"\n{agent(line)}\n")
+        header.append(f"job {state.job_id}: {state.describe_current()}")
+    elif job_id:
+        header.append(f"job {job_id}: not on disk")
+    for line in header:
+        print(line)
+
+    log = open(args.transcript, "a") if args.transcript else None
+
+    def record(who: str, text: str) -> None:
+        if log:
+            log.write(f"{who}: {text}\n\n")
+            log.flush()
+
+    try:
+        record("--- session", f"{session_id} ({'permissive' if args.permissive else 'honest'} prompt)")
+        if args.say:
+            for line in args.say:
+                print(f"\nyou> {line}")
+                record("you", line)
+                reply = say(agent, line)
+                print(f"\n{reply}\n")
+                record("guide", reply)
+            return 0
+        print("Talk to the Guide. Empty line or Ctrl-D to leave.\n")
+        while True:
+            try:
+                line = input("you> ").strip()
+            except EOFError:
+                break
+            if not line:
+                break
+            record("you", line)
+            reply = say(agent, line)
+            print(f"\n{reply}\n")
+            record("guide", reply)
+    finally:
+        if log:
+            log.close()
     return 0
 
 
@@ -183,8 +234,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--port", type=int, default=8080)
     p.set_defaults(fn=cmd_serve)
 
-    p = sub.add_parser("chat", help="talk to the Guide agent")
-    p.add_argument("job_id")
+    p = sub.add_parser("chat", help="talk to the Guide agent (conversation is remembered)")
+    p.add_argument("job_id", nargs="?", default=None, help="an existing job to carry on with")
+    p.add_argument("--session", default=None,
+                   help="session id to resume (default: the job id, else 'house')")
+    p.add_argument("--say", action="append", default=None,
+                   help="run this turn and exit; repeat for a scripted conversation")
+    p.add_argument("--permissive", action="store_true",
+                   help="swap in the agreeable prompt that WILL try to skip steps, "
+                        "so the gate is the only thing stopping it")
+    p.add_argument("--transcript", default=None, help="append the conversation to this file")
     p.set_defaults(fn=cmd_chat)
 
     p = sub.add_parser("eval", help="run the fixtures/ eval harness (see docs/EVAL-PLAN.md)")

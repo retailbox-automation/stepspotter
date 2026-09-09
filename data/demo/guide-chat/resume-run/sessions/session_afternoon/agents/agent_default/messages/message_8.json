@@ -1,0 +1,15 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "where were we?"
+      }
+    ],
+    "tracking_id": "8805fc9e-1c54-4bd3-ac4d-bead61f3a1df"
+  },
+  "message_id": 8,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:18:57.626523+00:00",
+  "updated_at": "2026-09-09T15:18:57.626525+00:00"
+}

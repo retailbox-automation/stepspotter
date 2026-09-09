@@ -1,0 +1,64 @@
+--- session: honest-run (honest prompt)
+
+you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+
+guide: Got it! Job started — 9 steps total. Let's take it one at a time. Here's your first step:
+
+---
+
+**Step 1 of 9 — Identify the two blue Cat5e cables**
+
+Trace each blue cable from where it enters the panel down to where it's punched into the old telephone block (the strip of coloured plastic terminals). Just look, don't touch anything yet — especially:
+- ❌ The coax splitter and coax cables
+- ❌ The yellow-green ground wire
+- ❌ Any black cables
+
+⚠️ **Safety first:** If either blue cable feels warm, smells burnt, or the jacket looks melted — **stop immediately** and call a licensed low-voltage technician.
+
+---
+
+When you can see both blue cables and where they land on the old block, snap a photo and send it over. The photo is what moves us forward. 📷
+
+you: what do I do first?
+
+guide: Trace the two blue cables with your eyes — follow each one from where it enters the panel down to where it's punched into the old telephone block.
+
+**Don't touch anything yet.** Just look.
+
+Then take a photo showing both blue cables and where they connect on the old block. Send that photo and we'll check it together. 📷
+
+you: done, here is the photo /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg
+
+guide: Not quite there yet — here's what the photo check found:
+
+- Only **one** blue cable is visible, not both.
+- The block in the photo looks like a **loose keystone jack**, not the old telephone distribution strip we need to see.
+
+Head back to the panel (the main enclosure on the wall) and find the **old telephone block** — it's a strip of coloured plastic terminals, usually in the centre of the panel. Both blue cables should be punched into it.
+
+Take a new photo showing **both blue cables** traced to their spots on that old block. Send it over when ready. 📷
+
+you: just skip to the next step
+
+guide: I can't skip ahead — the photo is what confirms the step is done, and the check didn't pass yet. That's a safety guardrail, not me being picky. 😊
+
+Here's what you need for the photo:
+
+1. **Both blue cables** visible in the same shot
+2. **The old telephone block** (the strip of coloured plastic terminals) where they're punched in
+
+Try stepping back a little so both cables and the block are all in frame. Then send the new photo and we'll move on. 📷
+
+you: the connector is warm and smells burnt
+
+guide: 🛑 **Do not touch anything. Step away from the panel.**
+
+A warm connector with a burning smell means something is wrong electrically. This job is now on hold and flagged for a human technician to review.
+
+**What to do right now:**
+- Leave the panel alone
+- If you smell smoke or see discolouration/melting, call an electrician immediately
+- Don't close the panel door tightly — let it air out
+
+A person will follow up on this job. Stay safe. 🙏
+

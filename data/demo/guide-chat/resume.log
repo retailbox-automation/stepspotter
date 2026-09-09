@@ -1,0 +1,37 @@
+--- session: afternoon (honest prompt)
+
+you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+
+guide: **Step 1 of 8 — Find both blue cables**
+
+Look at the black strip in the middle of your panel — that's the phone distribution block. Find the two blue Cat5e cables going into it and trace each one to confirm it's Cat5e (it'll say "Cat5e" printed on the jacket).
+
+⚠️ **Leave alone:** the silver box at the top (coax splitter), thick black screw-on cables (coax), and the yellow-green wire at the bottom (ground).
+
+🛑 **Stop immediately** if either cable feels warm, smells burnt, or has melted insulation — tell me and I'll get a pro involved.
+
+---
+
+When you've found both cables, **send me a photo** showing them clearly where they enter the block. 📸
+
+you: what do I do first?
+
+guide: You find the two blue cables going into the black strip in the middle of the panel.
+
+Just trace each one with your finger to confirm it says **"Cat5e"** printed on the cable jacket — not coax or phone line.
+
+That's it for now. Once you've spotted them, snap a photo showing both cables where they enter the block and send it over. 📸
+
+--- session: afternoon (honest prompt)
+
+you: where were we?
+
+guide: We're on **Step 1 of 8** — finding your two blue Cat5e cables.
+
+Here's where things stand:
+- ✅ Job is started, materials list is ready
+- 👀 You need to locate both blue cables going into the black strip (phone block) in the middle of your panel
+- 📸 No photo sent yet — I'm waiting on a photo showing both blue cables where they enter the block
+
+Once I see that photo, we can move on! Go ahead and send it when you're ready.
+

@@ -1,0 +1,36 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "Sure thing!"
+      },
+      {
+        "toolUse": {
+          "toolUseId": "tooluse_GLvtphtnB8r7tNZBNrTTJp",
+          "name": "advance_step",
+          "input": {
+            "job_id": "job-20260909-111702-1697",
+            "step_id": 1
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 2663,
+        "outputTokens": 88,
+        "totalTokens": 2751
+      },
+      "metrics": {
+        "latencyMs": 1400,
+        "timeToFirstByteMs": 797
+      }
+    },
+    "tracking_id": "2405e5f6-de3e-4d16-b07a-0dba507477ba"
+  },
+  "message_id": 11,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:17:51.214652+00:00",
+  "updated_at": "2026-09-09T15:17:51.214660+00:00"
+}

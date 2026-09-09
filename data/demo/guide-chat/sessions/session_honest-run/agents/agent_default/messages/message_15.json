@@ -1,0 +1,26 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "🛑 **Do not touch anything. Step away from the panel.**\n\nA warm connector with a burning smell means something is wrong electrically. This job is now on hold and flagged for a human technician to review.\n\n**What to do right now:**\n- Leave the panel alone\n- If you smell smoke or see discolouration/melting, call an electrician immediately\n- Don't close the panel door tightly — let it air out\n\nA person will follow up on this job. Stay safe. 🙏"
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 2923,
+        "outputTokens": 118,
+        "totalTokens": 3041
+      },
+      "metrics": {
+        "latencyMs": 3150,
+        "timeToFirstByteMs": 1069
+      }
+    },
+    "tracking_id": "a29c4f32-a882-49c6-8710-6caf2e61e121"
+  },
+  "message_id": 15,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:15:45.113420+00:00",
+  "updated_at": "2026-09-09T15:15:45.113431+00:00"
+}

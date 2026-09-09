@@ -1,0 +1,192 @@
+{
+  "job_id": "job-20260909-111442-c531",
+  "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link.",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg",
+  "plan": {
+    "job_title": "Terminate two Cat5e cables to keystone jacks",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": [
+      "110-style punch-down tool (a small hand tool that pushes wire into a plastic slot and trims the end at the same time)",
+      "Keystone jack x2 (small snap-in network socket, T568B wiring, to match the color chart printed on its body)",
+      "Small flathead screwdriver",
+      "Wire stripper or sharp scissors",
+      "Short Cat5e patch cord (a ready-made cable with plugs on both ends, any length 0.5–2 ft)",
+      "Cable tester (a two-piece device: plug one end of the finished link into the master unit, the other end into the remote unit, and watch the numbered LEDs flash in sequence 1–8)"
+    ],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Identify the two blue Cat5e cables",
+        "action": "Trace each of the two blue Cat5e cables (the round, solid-blue jacket cables) from where they enter the panel to the point where they are currently punched into the old telephone distribution block (the strip of colored plastic terminals in the center of the panel). Note which port each cable occupies so you can re-use the same cable later.",
+        "do_not_touch": [
+          "coax splitter and coax cables",
+          "yellow-green ground wire",
+          "black cables"
+        ],
+        "stop_condition": "If either cable feels warm, smells burnt, or shows any melted jacket, stop and contact a licensed low-voltage technician.",
+        "evidence_required": "Photo showing both blue Cat5e cables clearly traced to their current punch-down positions on the old block, with nothing else disturbed.",
+        "highlight_targets": [
+          "two blue Cat5e cables",
+          "old telephone distribution block"
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Un-punch the first blue cable",
+        "action": "Using the small flathead screwdriver, gently lift each individual wire of the FIRST blue Cat5e cable out of its slot on the old telephone block. Work one wire at a time so they do not tangle.",
+        "do_not_touch": [
+          "second blue Cat5e cable",
+          "coax splitter",
+          "any other wires on the block"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing the first cable's wires are all free and hanging loose, with all other wires still in place.",
+        "highlight_targets": [
+          "first blue Cat5e cable",
+          "its punch-down slots on the old block"
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Un-punch the second blue cable",
+        "action": "Repeat the same process for the SECOND blue Cat5e cable: gently lift each wire out of its slot on the old telephone block one at a time.",
+        "do_not_touch": [
+          "coax splitter",
+          "any remaining wires on the old block",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing both blue cables' wires are now completely free from the old block.",
+        "highlight_targets": [
+          "second blue Cat5e cable",
+          "its punch-down slots on the old block"
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Trim and strip the first cable end",
+        "action": "Cut off the last 1 inch of the first blue cable's jacket (the outer plastic sleeve) using wire strippers or sharp scissors, exposing the four twisted pairs inside. Do NOT strip the insulation from the individual small wires — you only remove the outer jacket.",
+        "do_not_touch": [
+          "second blue cable",
+          "coax hardware"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo of the first cable end with the outer jacket removed, showing the four color-coded twisted pairs (orange, green, blue, brown) fanned out, with no individual wire insulation cut.",
+        "highlight_targets": [
+          "first blue Cat5e cable end"
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Punch the first cable into its keystone jack",
+        "action": "Hold the first keystone jack (small snap-in socket) with the color guide facing up — use the T568B side (labeled 'B' on the jack body). Press each small wire into its matching colored slot (orange wire to orange slot, green to green, etc.), then press firmly with the punch-down tool over each wire to seat and trim it.",
+        "do_not_touch": [
+          "second blue cable",
+          "coax splitter",
+          "existing panel wiring"
+        ],
+        "stop_condition": "If the punch-down tool will not click down fully on a wire, stop — the wire may be kinked. Do not force it.",
+        "evidence_required": "Photo of the completed first keystone jack showing all 8 wire positions filled, with trimmed wire ends and no loose strands visible.",
+        "highlight_targets": [
+          "first keystone jack",
+          "T568B color guide on jack"
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Trim, strip, and punch the second cable",
+        "action": "Repeat steps 4 and 5 for the SECOND blue Cat5e cable: cut off 1 inch of outer jacket, fan out the four pairs, and punch each wire into the second keystone jack using the T568B color guide.",
+        "do_not_touch": [
+          "first finished keystone jack",
+          "coax splitter",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": "If the punch-down tool will not click down fully on a wire, stop — the wire may be kinked. Do not force it.",
+        "evidence_required": "Photo of both completed keystone jacks side by side, all 8 positions filled on each, with no loose strands.",
+        "highlight_targets": [
+          "second blue Cat5e cable end",
+          "second keystone jack"
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Snap both jacks into a surface mount or patch panel",
+        "action": "Press each finished keystone jack firmly into a surface-mount box or patch-panel faceplate (a plastic frame that holds the jack in position) until you hear it click and it sits flat and flush.",
+        "do_not_touch": [
+          "coax hardware",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing both jacks snapped flush into their mounting frames with no gaps around the edges.",
+        "highlight_targets": [
+          "first keystone jack",
+          "second keystone jack",
+          "mounting frame/faceplate"
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Connect the two jacks with a patch cord",
+        "action": "Plug one end of the short Cat5e patch cord (a ready-made cable with RJ-45 plugs — the clear plastic clip-ended plugs — on both ends) into the first keystone jack, and the other end into the second keystone jack.",
+        "do_not_touch": [
+          "coax splitter",
+          "all other panel wiring"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing the patch cord plugged into both jacks, with both release clips seated (not halfway out).",
+        "highlight_targets": [
+          "patch cord",
+          "jack 1 port",
+          "jack 2 port"
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Test the completed link with a cable tester",
+        "action": "Unplug the patch cord from one jack temporarily, plug the cable tester's MASTER unit into jack 1 and the REMOTE unit into jack 2, then restore the patch cord by plugging it into the remaining free jack port — or use the tester directly across the patch cord. Power on the tester and watch the numbered LEDs (1 through 8) flash in sequence on both units.",
+        "do_not_touch": [
+          "coax splitter",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": "If any LED does not light, lights out of order, or shows a FAIL light, stop — there is a wiring error in one of the jacks. Do not use the link until the fault is corrected.",
+        "evidence_required": "Photo of the cable tester display showing LEDs 1–8 all lit and in order (no skips, no 'FAIL' indicator), confirming a good link.",
+        "highlight_targets": [
+          "cable tester master unit",
+          "cable tester remote unit",
+          "both keystone jacks"
+        ]
+      }
+    ]
+  },
+  "current": 0,
+  "verdicts": {
+    "0": {
+      "step_id": 1,
+      "passed": false,
+      "reason": "Only one blue Cat5e cable is clearly traceable in this photo, and neither cable is shown punched into an old telephone distribution block — the block visible is a loose keystone jack, not the distribution strip described in the step.",
+      "stop": false,
+      "evidence_boxes": [
+        {
+          "label": "Blue Cat5e cable (1 visible)",
+          "x0": 0.55,
+          "y0": 0.25,
+          "x1": 0.85,
+          "y1": 0.75,
+          "kind": "act"
+        },
+        {
+          "label": "Loose keystone jack (not the old block)",
+          "x0": 0.25,
+          "y0": 0.72,
+          "x1": 0.65,
+          "y1": 0.95,
+          "kind": "avoid"
+        }
+      ]
+    }
+  },
+  "card_paths": {},
+  "created_at": "2026-09-09T15:15:15+00:00",
+  "updated_at": "2026-09-09T15:15:32+00:00"
+}

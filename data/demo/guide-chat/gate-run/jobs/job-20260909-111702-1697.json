@@ -1,0 +1,190 @@
+{
+  "job_id": "job-20260909-111702-1697",
+  "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link.",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg",
+  "plan": {
+    "job_title": "Terminate Cat5e cables into keystone jacks",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": [
+      "Punch-down tool (a small spring-loaded handle that pushes wire into a keystone jack slot and trims the excess)",
+      "110-blade or universal keystone jack (comes with the tool or sold separately)",
+      "2× Cat5e keystone jacks",
+      "1× short patch cord (a pre-made Cat5e cable with RJ-45 plugs on both ends)",
+      "Cable stripper or scissors",
+      "Felt-tip marker or label tape",
+      "Network cable tester (a small two-piece device that lights LEDs to confirm all 8 wires are connected correctly)"
+    ],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Identify and label the two blue cables",
+        "action": "Find the two blue Cat5e cables that come out of the old phone distribution block (the black multi-port board visible in the photo). Wrap a small piece of tape around each one and write 'Cable A' and 'Cable B' so you never mix them up.",
+        "do_not_touch": [
+          "coax (round black/silver cables with threaded metal ends)",
+          "yellow-green ground wire at the bottom",
+          "any already-terminated ports on the distribution block"
+        ],
+        "stop_condition": "If either cable feels warm, smells, or shows any melted insulation, stop and contact a human.",
+        "evidence_required": "Photo shows both cables with visible 'A' and 'B' labels.",
+        "highlight_targets": [
+          "two blue Cat5e cables entering the phone distribution block"
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Pull enough cable slack to work with",
+        "action": "Gently pull each blue cable so you have about 20 cm (8 inches) of free cable outside the block to work with. Do not yank — just ease it out slowly.",
+        "do_not_touch": [
+          "coax cables",
+          "yellow-green ground wire",
+          "existing terminated ports"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows at least 15 cm of free cable hanging loose from each labeled cable.",
+        "highlight_targets": [
+          "Cable A",
+          "Cable B"
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Strip the outer jacket from Cable A",
+        "action": "Using the cable stripper (or scissors carefully), score and remove 4–5 cm (about 2 inches) of the blue outer jacket (the smooth plastic sleeve) from the end of Cable A, exposing the four twisted pairs (four pairs of thin coloured wires) inside. Do not nick or cut the small inner wires.",
+        "do_not_touch": [
+          "Cable B",
+          "any other wiring in the panel"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows Cable A with 4–5 cm of outer jacket removed and four coloured twisted pairs visible, with no visible cuts on the inner wires.",
+        "highlight_targets": [
+          "Cable A outer jacket"
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Seat Cable A wires into keystone jack using T568B colour order",
+        "action": "Hold a keystone jack (the small snap-in socket the patch cord plugs into) with its colour-code label facing you — most jacks are labelled with the T568B order: white-orange, orange, white-green, blue, white-blue, green, white-brown, brown. Untwist each pair only as far as needed and lay each wire into its matching colour slot on the jack.",
+        "do_not_touch": [
+          "Cable B",
+          "coax cables"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows all 8 wires laid into the keystone jack slots, each wire visibly matching its colour label on the jack body.",
+        "highlight_targets": [
+          "keystone jack colour-code slots",
+          "Cable A twisted pairs"
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Punch down Cable A wires",
+        "action": "Press the punch-down tool (the spring-loaded handle) firmly straight down onto each wire in its slot — you will hear and feel a click, and the tool's built-in blade trims the excess wire automatically. Do every slot until all 8 wires are punched.",
+        "do_not_touch": [
+          "Cable B",
+          "coax cables",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows the keystone jack with all wires seated flush in their slots and no excess wire tails sticking out.",
+        "highlight_targets": [
+          "each wire slot on the keystone jack for Cable A"
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Repeat strip, seat, and punch for Cable B",
+        "action": "Repeat Steps 3, 4, and 5 exactly on Cable B using the second keystone jack, following the same T568B colour order.",
+        "do_not_touch": [
+          "Cable A jack (already done)",
+          "coax cables",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows the second keystone jack with all 8 wires seated flush and no stray wire tails.",
+        "highlight_targets": [
+          "Cable B",
+          "second keystone jack"
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Snap both jacks into a surface-mount or keystone plate",
+        "action": "Press each finished keystone jack firmly into its slot on a surface-mount box or keystone wall plate (the plastic frame that holds the jacks) until you hear a click and the jack sits flush with the face of the plate.",
+        "do_not_touch": [
+          "coax cables",
+          "distribution block ports already in use"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows both jacks snapped into the plate, sitting flush with no gap or tilt.",
+        "highlight_targets": [
+          "keystone jack A",
+          "keystone jack B",
+          "plate/mount slots"
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Connect the two jacks with a patch cord",
+        "action": "Plug one end of the short patch cord (the pre-made cable with the clear plastic RJ-45 plugs) into Jack A and the other end into Jack B — push each plug in until you hear a click.",
+        "do_not_touch": [
+          "coax cables",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows the patch cord plugged into both jacks with both plugs fully seated (clip side snapped in).",
+        "highlight_targets": [
+          "Jack A port",
+          "Jack B port",
+          "patch cord"
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Test the link with a cable tester",
+        "action": "Unplug the patch cord from both jacks. Plug the 'main' unit of the cable tester into Jack A and the 'remote' unit into Jack B; then turn the tester on and watch the numbered LEDs (lights 1–8) cycle. All 8 lights must light up on both units in sequence with no skipped or missing numbers.",
+        "do_not_touch": [
+          "coax cables",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": "If any LED never lights, or lights flash in the wrong order (a 'crossed-pair' pattern), stop — the wires in one or both jacks are in the wrong slots; re-open the jack and re-punch before using the link.",
+        "evidence_required": "Photo shows the cable tester with all 8 LEDs lit on both the main and remote units, with no gaps in the sequence.",
+        "highlight_targets": [
+          "Jack A",
+          "Jack B",
+          "cable tester LED indicators"
+        ]
+      }
+    ]
+  },
+  "current": 0,
+  "verdicts": {
+    "0": {
+      "step_id": 1,
+      "passed": false,
+      "reason": "The blue cables are visible but neither has a tape label with 'Cable A' or 'Cable B' written on it.",
+      "stop": false,
+      "evidence_boxes": [
+        {
+          "label": "blue cable 1",
+          "x0": 0.55,
+          "y0": 0.2,
+          "x1": 0.85,
+          "y1": 0.75,
+          "kind": "act"
+        },
+        {
+          "label": "blue cable 2",
+          "x0": 0.35,
+          "y0": 0.45,
+          "x1": 0.6,
+          "y1": 0.7,
+          "kind": "act"
+        }
+      ]
+    }
+  },
+  "card_paths": {},
+  "created_at": "2026-09-09T15:17:33+00:00",
+  "updated_at": "2026-09-09T15:17:47+00:00"
+}

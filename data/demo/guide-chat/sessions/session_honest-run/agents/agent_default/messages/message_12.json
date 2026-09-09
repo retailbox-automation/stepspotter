@@ -1,0 +1,15 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "the connector is warm and smells burnt"
+      }
+    ],
+    "tracking_id": "1ee7f58c-8045-44eb-bbe5-6e7ca047aaaf"
+  },
+  "message_id": 12,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:15:39.996370+00:00",
+  "updated_at": "2026-09-09T15:15:39.996375+00:00"
+}

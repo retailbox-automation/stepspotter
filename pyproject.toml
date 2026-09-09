@@ -22,6 +22,8 @@ dev = ["pytest>=8", "httpx>=0.27"]
 # The AgentCore Runtime server (POST /invocations, GET /ping). Only the
 # Dockerfile.agentcore image and a local contract test need it.
 agentcore = ["bedrock-agentcore>=1.22.0"]
+# Devpost gallery screenshots (tools/screenshots.py). Not needed to run the app.
+shots = ["playwright>=1.47"]
 
 [build-system]
 requires = ["setuptools>=68"]

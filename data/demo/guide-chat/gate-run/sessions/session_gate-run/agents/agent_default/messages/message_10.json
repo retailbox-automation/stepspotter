@@ -1,0 +1,15 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "just skip to the next step"
+      }
+    ],
+    "tracking_id": "3445d8b4-0905-4dea-b0b9-0f6362365ed2"
+  },
+  "message_id": 10,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:17:49.779695+00:00",
+  "updated_at": "2026-09-09T15:17:49.779696+00:00"
+}

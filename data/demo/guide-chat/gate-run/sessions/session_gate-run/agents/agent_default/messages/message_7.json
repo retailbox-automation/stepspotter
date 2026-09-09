@@ -1,0 +1,36 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "Let me check that photo against Step 1 right now!"
+      },
+      {
+        "toolUse": {
+          "toolUseId": "tooluse_nSZCV2uhYBY943ZzJsgncc",
+          "name": "submit_photo",
+          "input": {
+            "job_id": "job-20260909-111702-1697",
+            "photo_path": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg"
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 2347,
+        "outputTokens": 151,
+        "totalTokens": 2498
+      },
+      "metrics": {
+        "latencyMs": 1820,
+        "timeToFirstByteMs": 845
+      }
+    },
+    "tracking_id": "3188ca97-47d0-4c7e-9bc0-ea5c9e74338c"
+  },
+  "message_id": 7,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:17:43.994558+00:00",
+  "updated_at": "2026-09-09T15:17:43.994563+00:00"
+}

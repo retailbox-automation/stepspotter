@@ -1,0 +1,33 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "toolUse": {
+          "toolUseId": "tooluse_4mA7FehawDMjGfIm3RtI22",
+          "name": "submit_photo",
+          "input": {
+            "job_id": "job-20260909-111442-c531",
+            "photo_path": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg"
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 2235,
+        "outputTokens": 138,
+        "totalTokens": 2373
+      },
+      "metrics": {
+        "latencyMs": 1546,
+        "timeToFirstByteMs": 1039
+      }
+    },
+    "tracking_id": "5fc9a153-0d41-4640-a6de-da76606b06c2"
+  },
+  "message_id": 7,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:15:23.413102+00:00",
+  "updated_at": "2026-09-09T15:15:23.413115+00:00"
+}

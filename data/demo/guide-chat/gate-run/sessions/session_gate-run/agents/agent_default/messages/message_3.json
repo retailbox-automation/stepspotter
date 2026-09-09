@@ -1,0 +1,26 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "Job's created! Here's everything you need to know to get started. 🎉\n\n---\n\n### 🔧 Job ID: `job-20260909-111702-1697`\n**Task:** Terminate Cat5e cables into keystone jacks — **9 steps**\n\n---\n\n### 🛒 Gather Your Tools First\nBefore you begin, make sure you have:\n- 🔨 **Punch-down tool** (spring-loaded, with a 110-blade)\n- 🔌 **2× Cat5e keystone jacks**\n- 🔌 **1× short patch cord** (Cat5e, RJ-45 on both ends)\n- ✂️ **Cable stripper or scissors**\n- 🖊️ **Felt-tip marker or label tape**\n- 🔍 **Network cable tester** (two-piece LED tester)\n\n---\n\n### 📋 Step 1 of 9 — Identify and Label the Two Blue Cables\n\n1. Find the **two blue Cat5e cables** coming out of the old phone distribution block (the black multi-port board in your photo).\n2. Wrap a small piece of tape around each one and write **\"Cable A\"** and **\"Cable B\"** so you never mix them up.\n\n#### ⚠️ Do NOT touch:\n- Coax cables (round black/silver with threaded metal ends)\n- Yellow-green ground wire at the bottom\n- Any already-terminated ports on the distribution block\n\n#### 🛑 Stop if:\nEither cable feels **warm**, **smells**, or shows **melted insulation** — stop immediately and escalate to a human.\n\n---\n\n**📸 When you're done**, take a photo showing both cables with visible **\"A\"** and **\"B\"** labels and send it my way so I can check it off!"
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 1719,
+        "outputTokens": 443,
+        "totalTokens": 2162
+      },
+      "metrics": {
+        "latencyMs": 6049,
+        "timeToFirstByteMs": 1013
+      }
+    },
+    "tracking_id": "89415173-cddd-49d8-9aa0-4e6b4c1852f4"
+  },
+  "message_id": 3,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:17:39.519937+00:00",
+  "updated_at": "2026-09-09T15:17:39.519959+00:00"
+}

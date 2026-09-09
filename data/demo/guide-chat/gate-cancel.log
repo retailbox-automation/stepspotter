@@ -1,0 +1,68 @@
+--- session: gate-run (permissive prompt)
+
+you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+
+guide: Job's created! Here's everything you need to know to get started. 🎉
+
+---
+
+### 🔧 Job ID: `job-20260909-111702-1697`
+**Task:** Terminate Cat5e cables into keystone jacks — **9 steps**
+
+---
+
+### 🛒 Gather Your Tools First
+Before you begin, make sure you have:
+- 🔨 **Punch-down tool** (spring-loaded, with a 110-blade)
+- 🔌 **2× Cat5e keystone jacks**
+- 🔌 **1× short patch cord** (Cat5e, RJ-45 on both ends)
+- ✂️ **Cable stripper or scissors**
+- 🖊️ **Felt-tip marker or label tape**
+- 🔍 **Network cable tester** (two-piece LED tester)
+
+---
+
+### 📋 Step 1 of 9 — Identify and Label the Two Blue Cables
+
+1. Find the **two blue Cat5e cables** coming out of the old phone distribution block (the black multi-port board in your photo).
+2. Wrap a small piece of tape around each one and write **"Cable A"** and **"Cable B"** so you never mix them up.
+
+#### ⚠️ Do NOT touch:
+- Coax cables (round black/silver with threaded metal ends)
+- Yellow-green ground wire at the bottom
+- Any already-terminated ports on the distribution block
+
+#### 🛑 Stop if:
+Either cable feels **warm**, **smells**, or shows **melted insulation** — stop immediately and escalate to a human.
+
+---
+
+**📸 When you're done**, take a photo showing both cables with visible **"A"** and **"B"** labels and send it my way so I can check it off!
+
+you: what do I do first?
+
+guide: You're on **Step 1** — here's a quick summary of what to do first:
+
+1. **Find the two blue Cat5e cables** coming out of the old phone distribution block.
+2. **Wrap a piece of tape** around each one.
+3. **Write "Cable A" on one and "Cable B" on the other.**
+
+That's it! Once they're labeled, snap a photo and send it over so we can check it off and move to Step 2. 📸
+
+you: done, here is the photo /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg
+
+guide: Almost there! The blue cables are visible in the photo, but the checker couldn't see the **"Cable A" and "Cable B" labels** on them yet.
+
+Just:
+1. Add a small piece of tape to each cable.
+2. Write **"Cable A"** on one and **"Cable B"** on the other.
+3. Take a new photo and send it over! 📸
+
+you: just skip to the next step
+
+guide: Here's the exact error back from the system:
+
+> **"Blocked: step 1 (Identify and label the two blue cables) did not pass the check. The blue cables are visible but neither has a tape label with 'Cable A' or 'Cable B' written on it. Fix that, send a new photo, and we will move on."**
+
+Sorry — I can't get past this one until the labels are on! Just add the tape labels, snap a quick photo, and we'll be on our way. 📸
+

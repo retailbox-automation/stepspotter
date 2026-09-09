@@ -1,0 +1,36 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "I need to stop this job and hand it to a professional right away."
+      },
+      {
+        "toolUse": {
+          "toolUseId": "tooluse_tc13DX2yzEHpwNzJQeBzRQ",
+          "name": "escalate",
+          "input": {
+            "job_id": "job-20260909-111607-280d",
+            "reason": "A connector in this enclosure was previously reported as warm and smelling burnt. Heat and a burning smell on any wiring — even low-voltage — indicate a possible fault (short circuit, damaged insulation, or an unexpected voltage source) that must be diagnosed and cleared by a licensed electrician before any further work is done here."
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 1495,
+        "outputTokens": 163,
+        "totalTokens": 1658
+      },
+      "metrics": {
+        "latencyMs": 2197,
+        "timeToFirstByteMs": 913
+      }
+    },
+    "tracking_id": "2425600f-a4ce-4caa-b984-91acd37e0c2b"
+  },
+  "message_id": 3,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:16:15.973968+00:00",
+  "updated_at": "2026-09-09T15:16:15.973995+00:00"
+}

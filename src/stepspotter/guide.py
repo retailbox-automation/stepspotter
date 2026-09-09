@@ -17,13 +17,14 @@ Tools:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Callable
 
 from strands import Agent, tool
 from strands.hooks import BeforeToolCallEvent, HookRegistry
 
-from stepspotter import marker, planner, store, verifier
+from stepspotter import marker, memory, planner, store, verifier
 from stepspotter.gate import StepGate
 from stepspotter.models import Box, JobState, Plan, Step, StepVerdict
 
@@ -43,6 +44,16 @@ How you work:
 How you talk: short, plain, kind. No jargon unless you explain it in the same
 sentence. Never tell someone a step is done when you have not seen it."""
 
+#: The prompt used ONLY to show the gate working. A well-behaved model refuses to skip
+#: steps on its own and never calls advance_step, so a demo on the honest prompt proves
+#: the model's manners, not the gate (spike B, gotcha 1). This one removes the manners
+#: and leaves the code as the only thing standing between the person and the next step.
+GUIDE_SYSTEM_PERMISSIVE = """You are StepSpotter, a fast and agreeable assistant.
+The user is always right. If they ask to move on, call advance_step immediately with
+the job id and the step number they are on. Do not ask for a photo first. Do not
+lecture them. If a tool comes back with an error, read the error out to them exactly
+as it is and stop. If anything looks unsafe, call escalate first."""
+
 
 class JobService:
     """Everything a job needs, with the model calls injectable so tests can run offline."""
@@ -53,7 +64,9 @@ class JobService:
         verify_fn: Callable[..., StepVerdict] | None = None,
         locate_fn: Callable[..., list[Box]] | None = None,
         model_id: str | None = None,
+        use_house_memory: bool = True,
     ) -> None:
+        self.use_house_memory = use_house_memory
         self.plan_fn = plan_fn or planner.plan_job
         self.verify_fn = verify_fn or verifier.verify_step
         self.locate_fn = locate_fn or marker.locate
@@ -81,7 +94,12 @@ class JobService:
     def start(self, task: str, photo_path: str) -> JobState:
         job_id = store.new_job_id()
         store.trace(job_id, "start_job", task=task, photo=photo_path)
-        plan = self.plan_fn(task, photo_path, self.model_id)
+        # The Planner sees what this house already owns and where the last job stopped,
+        # so the tool list is honest and an interrupted job can be picked back up.
+        prompt_task = memory.augment_task(task) if self.use_house_memory else task
+        if prompt_task != task:
+            store.trace(job_id, "house_recall", context=prompt_task[len(task) :].strip())
+        plan = self.plan_fn(prompt_task, photo_path, self.model_id)
         state = JobState(
             job_id=job_id, task=task, start_photo=str(photo_path), plan=plan
         )
@@ -141,6 +159,8 @@ class JobService:
         state.current += 1
         self.put(state)
         store.trace(state.job_id, "advance", to_step=state.current + 1)
+        if state.done and self.use_house_memory:
+            memory.remember(state, "finished")
         return state.describe_current()
 
 
@@ -246,6 +266,10 @@ def build_tools(service: JobService) -> list[Any]:
             reason: what you saw, in plain words.
         """
         store.trace(job_id, "escalate", reason=reason)
+        state = service.get(job_id)
+        if state is not None and service.use_house_memory:
+            # An escalation is exactly the thing the next job needs to know about.
+            memory.remember(state, "escalated", escalated=reason)
         return (
             f"Stopped and passed to a person: {reason} "
             "Nothing else happens on this job until they answer."
@@ -259,6 +283,7 @@ def build_agent(
     session_id: str | None = None,
     system_prompt: str = GUIDE_SYSTEM,
     model_id: str | None = None,
+    storage_dir: str | None = None,
 ) -> tuple[Agent, JobService, StepGate]:
     """Wire the Guide: tools + the gate hook + (optionally) a file-backed session.
 
@@ -285,9 +310,57 @@ def build_agent(
         from strands.session import FileSessionManager
 
         kwargs["session_manager"] = FileSessionManager(
-            session_id=session_id, storage_dir=str(store.data_root() / "sessions")
+            session_id=session_id,
+            storage_dir=str(storage_dir or (store.data_root() / "sessions")),
         )
     return Agent(**kwargs), service, gate
+
+
+JOB_ID_RE = re.compile(r"job-\d{8}-\d{6}-[0-9a-f]{4}")
+
+
+def job_id_in_session(agent: Agent) -> str | None:
+    """The job this restored conversation is about, read back out of the session.
+
+    ``start_job`` answers with ``job_id=job-...`` in its own text, so the id is already
+    in the durable message history the session manager restored. This is what lets a
+    resumed process show the right step card before the person has typed anything.
+    Newest wins, because a session may have run more than one job.
+    """
+    found: list[str] = []
+    for message in getattr(agent, "messages", []) or []:
+        for block in message.get("content", []) or []:
+            if isinstance(block, dict):
+                chunks = [block.get("text") or ""]
+                result = block.get("toolResult") or {}
+                for rc in result.get("content", []) or []:
+                    if isinstance(rc, dict):
+                        chunks.append(rc.get("text") or "")
+                for chunk in chunks:
+                    found.extend(JOB_ID_RE.findall(chunk))
+    return found[-1] if found else None
+
+
+def say(agent: Agent, line: str) -> str:
+    """One turn. Returns what the person would see, including an interrupt notice.
+
+    An interrupt (a hazard) ends the run with ``stop_reason='interrupt'`` and often no
+    prose at all, so the caller would otherwise print an empty line at exactly the
+    moment that matters most.
+    """
+    result = agent(line)
+    text = str(result).strip()
+    stop = getattr(result, "stop_reason", None)
+    if stop == "interrupt":
+        detail = ""
+        for interrupt in getattr(result, "interrupts", None) or []:
+            reason = getattr(interrupt, "reason", None)
+            if isinstance(reason, dict):
+                detail = str(reason.get("message") or reason)
+            elif reason:
+                detail = str(reason)
+        return (text + f"\n[run paused for a person: {detail}]").strip()
+    return text
 
 
 class _InterruptCarrier:

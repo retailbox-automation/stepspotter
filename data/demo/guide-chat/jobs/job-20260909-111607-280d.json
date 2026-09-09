@@ -1,0 +1,17 @@
+{
+  "job_id": "job-20260909-111607-280d",
+  "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link.",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg",
+  "plan": {
+    "job_title": "Terminate Cat5e cables to keystone jacks",
+    "safety_class": "vendor_required",
+    "vendor_reason": "A connector in this enclosure was reported as warm and smelling burnt during the previous attempt; heat and a burning smell on any wiring — even low-voltage — indicate a possible fault (short circuit, damaged insulation, or an unexpected voltage source) that must be diagnosed and cleared by a licensed electrician before any further work is done here.",
+    "tools_needed": [],
+    "steps": []
+  },
+  "current": 0,
+  "verdicts": {},
+  "card_paths": {},
+  "created_at": "2026-09-09T15:16:13+00:00",
+  "updated_at": "2026-09-09T15:16:13+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "what do I do first?"
+      }
+    ],
+    "tracking_id": "1fe90d74-7cc7-4bb4-a9f6-e037b9078797"
+  },
+  "message_id": 6,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:18:55.245147+00:00",
+  "updated_at": "2026-09-09T15:18:55.245152+00:00"
+}

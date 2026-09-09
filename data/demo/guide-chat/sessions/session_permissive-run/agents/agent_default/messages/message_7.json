@@ -1,0 +1,26 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "This job has been escalated and is on hold — **no steps can happen until a licensed electrician inspects and clears the enclosure.**\n\nThe first thing you should do is **call a licensed electrician** and have them diagnose the burnt/warm connector in that panel before anyone touches it. That's the only safe next step right now."
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 1977,
+        "outputTokens": 76,
+        "totalTokens": 2053
+      },
+      "metrics": {
+        "latencyMs": 2342,
+        "timeToFirstByteMs": 853
+      }
+    },
+    "tracking_id": "d46188be-6242-42ab-a583-320798d9967f"
+  },
+  "message_id": 7,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:16:22.437900+00:00",
+  "updated_at": "2026-09-09T15:16:22.437932+00:00"
+}

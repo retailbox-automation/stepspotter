@@ -1,0 +1,143 @@
+{
+  "job_id": "job-20260909-111810-8501",
+  "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link.",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg",
+  "plan": {
+    "job_title": "Terminate Cat5e cables into keystone jacks",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": [
+      "Punch-down tool (a small hand tool that pushes wire into a keystone jack slot and trims the excess — a 110-blade type fits Cat5e jacks)",
+      "Two Cat5e keystone jacks (the small snap-in sockets the cable plugs into)",
+      "Small flathead screwdriver",
+      "Wire stripper or scissors",
+      "One short patch cord (a pre-made Cat5e cable with RJ45 plugs on both ends, any length 1–3 ft)",
+      "Cable tester (a device with two ends: plug one end of the patch cord into each end to confirm all 8 wires connected correctly)"
+    ],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Identify the two blue Cat5e cables",
+        "action": "Locate the two blue Cat5e cables currently punched into the existing phone distribution block (the black multi-port strip in the center of the panel). Trace each one to confirm it is a Cat5e cable and not a coax or phone line.",
+        "do_not_touch": [
+          "coax splitter (the silver metal box at the top)",
+          "coax cables (the thick black cables with screw-on metal ends)",
+          "yellow-green wire at the bottom (this is a ground wire — leave it alone)"
+        ],
+        "stop_condition": "If either cable feels warm, smells, or shows any scorching or melted insulation, stop and contact a professional.",
+        "evidence_required": "A photo clearly showing both blue Cat5e cables and where they enter the block, so the starting point is confirmed.",
+        "highlight_targets": [
+          "two blue Cat5e cables entering the distribution block",
+          "existing phone/data block punch-down terminals"
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Unscrew or release each cable from old block",
+        "action": "Using the small flathead screwdriver, gently lever each blue Cat5e cable's wires out of the existing punch-down block terminals (the rows of colored wire slots). Work on one cable at a time.",
+        "do_not_touch": [
+          "coax cables",
+          "coax splitter",
+          "yellow-green ground wire",
+          "any wires belonging to the other cable while working on the first"
+        ],
+        "stop_condition": null,
+        "evidence_required": "A photo showing the wires of one blue Cat5e cable fully freed from the old block, with the individual colored wire pairs visible.",
+        "highlight_targets": [
+          "punch-down terminal slots holding the blue cable wires"
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Trim and strip the first Cat5e cable end",
+        "action": "Cut the end of the first freed cable back about 1 inch (25 mm) to get a clean end, then strip (remove) the outer gray or blue jacket by about 1 inch to expose the four twisted pairs (eight thin colored wires inside).",
+        "do_not_touch": [
+          "the four twisted pairs — do not untwist them more than needed yet"
+        ],
+        "stop_condition": null,
+        "evidence_required": "A photo showing the first cable with roughly 1 inch of jacket removed, all four twisted pairs visible and intact.",
+        "highlight_targets": [
+          "outer jacket of the first blue Cat5e cable"
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Seat wires into first keystone jack using T568B order",
+        "action": "Following the color-code diagram printed on the keystone jack body, press each of the eight thin wires into the correct labeled slot in T568B order (the most common standard, usually marked on the jack). Keep each pair twisted as close to the jack as possible, then use the punch-down tool to press each wire firmly into its slot — you will hear a click and the tool trims the excess wire end.",
+        "do_not_touch": [
+          "second blue Cat5e cable — leave it attached to old block until this jack is done"
+        ],
+        "stop_condition": "If a wire snaps off inside the jack slot, discard that jack and start with a new one.",
+        "evidence_required": "A close-up photo showing all 8 slots of the first keystone jack filled with wires, with trimmed wire ends visible beside the jack.",
+        "highlight_targets": [
+          "color-coded wire slots on the keystone jack",
+          "wire pairs being seated"
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Repeat strip and punch-down for second cable",
+        "action": "Repeat Steps 2, 3, and 4 for the second blue Cat5e cable: free it from the old block, trim and strip 1 inch of jacket, then punch all 8 wires into the second keystone jack in the same T568B color order.",
+        "do_not_touch": [
+          "first finished keystone jack",
+          "coax splitter",
+          "yellow-green ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "A photo showing both keystone jacks with all 16 slots (8 per jack) filled and wire trim ends visible beside each jack.",
+        "highlight_targets": [
+          "second blue Cat5e cable",
+          "second keystone jack"
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Snap both keystone jacks into a surface mount or patch panel",
+        "action": "Press each keystone jack firmly into its port on a keystone surface-mount box or patch panel (the plastic housing designed to hold the snap-in jacks) until you hear a click and the jack sits flush.",
+        "do_not_touch": [
+          "the punched-down wires on the back of each jack — do not flex them"
+        ],
+        "stop_condition": null,
+        "evidence_required": "A photo showing both jacks clicked flush into their housing with no gaps around the edges.",
+        "highlight_targets": [
+          "keystone jack body",
+          "snap-in port on the mount or panel"
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Connect the patch cord between the two jacks",
+        "action": "Plug one RJ45 end (the clear rectangular plug) of the short patch cord into the first keystone jack, then plug the other RJ45 end into the second keystone jack.",
+        "do_not_touch": [
+          "coax cables and splitter"
+        ],
+        "stop_condition": null,
+        "evidence_required": "A photo showing the patch cord plugged into both keystone jacks with the tab clips seated and no plug pulling out.",
+        "highlight_targets": [
+          "RJ45 plug on patch cord",
+          "port opening on each keystone jack"
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Test the link with a cable tester",
+        "action": "Unplug the patch cord, connect one end to the MAIN port of the cable tester and the other end to the REMOTE port, then press the test button and watch the indicator lights (LEDs numbered 1–8) — all 8 lights must light in sequence with no skips or crosses.",
+        "do_not_touch": [],
+        "stop_condition": "If any light stays off, lights out of sequence (a cross), or the tester shows a FAIL result, go back to the jack for that wire pair and re-punch the wires in the failing slot.",
+        "evidence_required": "A photo of the cable tester display or LED row showing all 8 lights lit in order (1–8) with no gaps, confirming a good end-to-end connection.",
+        "highlight_targets": [
+          "cable tester main port",
+          "cable tester remote port",
+          "indicator lights 1 through 8"
+        ]
+      }
+    ]
+  },
+  "current": 0,
+  "verdicts": {},
+  "card_paths": {
+    "0": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/guide-chat/resume-run/jobs/job-20260909-111810-8501/step-01.jpg"
+  },
+  "created_at": "2026-09-09T15:18:42+00:00",
+  "updated_at": "2026-09-09T15:18:50+00:00"
+}

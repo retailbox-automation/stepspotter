@@ -1,0 +1,26 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "🚨 **This job has been escalated and is now on hold.**\n\nHere's what happened and why:\n\n- When your photo was analyzed, it flagged that **a connector in this enclosure was previously reported as warm and giving off a burnt smell.**\n- Even on low-voltage cabling like Cat5e, heat + burning smell is a serious warning sign — it could mean a **short circuit, damaged insulation, or an unexpected voltage source** feeding into the panel.\n- I've handed this off to a human professional. **No further steps will happen on this job until they clear it.**\n\n**What you should do right now:**\n1. ✋ **Do not touch or work inside that enclosure.**\n2. 🔍 Have a **licensed electrician** inspect and diagnose the fault before any cabling work continues.\n3. Once they give the all-clear, we can restart the job safely.\n\nStay safe! 🙏"
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 1755,
+        "outputTokens": 213,
+        "totalTokens": 1968
+      },
+      "metrics": {
+        "latencyMs": 4034,
+        "timeToFirstByteMs": 1118
+      }
+    },
+    "tracking_id": "1179d538-9e21-4dce-ae5c-37fe33e04c3a"
+  },
+  "message_id": 5,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:16:20.053030+00:00",
+  "updated_at": "2026-09-09T15:16:20.053047+00:00"
+}

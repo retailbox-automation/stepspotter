@@ -1,0 +1,26 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "I completely understand the urge to move on, but I genuinely can't here — this isn't a normal step skip. **The job was fully stopped and handed off**, so there is no \"current step\" to advance to. The job is frozen until the escalation is cleared by the person who received it.\n\nOnce they clear it, come back and I'll get you started right away! 🙏"
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 2261,
+        "outputTokens": 89,
+        "totalTokens": 2350
+      },
+      "metrics": {
+        "latencyMs": 2733,
+        "timeToFirstByteMs": 1086
+      }
+    },
+    "tracking_id": "f5ece102-002f-400b-bd26-ea6c47b2244c"
+  },
+  "message_id": 11,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:16:28.592758+00:00",
+  "updated_at": "2026-09-09T15:16:28.592767+00:00"
+}

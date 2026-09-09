@@ -1,0 +1,15 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "done, here is the photo /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg"
+      }
+    ],
+    "tracking_id": "38f4134f-7632-4c77-99e0-c1fb53509c28"
+  },
+  "message_id": 6,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:17:42.142045+00:00",
+  "updated_at": "2026-09-09T15:17:42.142047+00:00"
+}

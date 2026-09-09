@@ -1,0 +1,33 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "toolUse": {
+          "toolUseId": "tooluse_4EfKU87KEP4zUuuOpg0Mgq",
+          "name": "start_job",
+          "input": {
+            "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link.",
+            "photo_path": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg"
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 1336,
+        "outputTokens": 155,
+        "totalTokens": 1491
+      },
+      "metrics": {
+        "latencyMs": 1702,
+        "timeToFirstByteMs": 1025
+      }
+    },
+    "tracking_id": "d02b9ae1-8bb1-421e-a0bb-45bcc036e65d"
+  },
+  "message_id": 1,
+  "redact_message": null,
+  "created_at": "2026-09-09T15:18:10.514736+00:00",
+  "updated_at": "2026-09-09T15:18:10.514753+00:00"
+}
