@@ -1,0 +1,10 @@
+== docker container, linux/arm64 ==
+arch: aarch64 python: 3.12.14
+HTTP/1.1 200 OK
+date: Wed, 09 Sep 2026 15:08:31 GMT
+server: uvicorn
+content-length: 53
+content-type: application/json
+
+
+{"text": "I guide you through home repairs one step at a time, using photos of your actual thing to make sure each step is really done before moving on. Just tell me what you want to fix and snap a photo of it, and I'll walk you through the whole job safely!", "job_id": null, "current_step": null, "trace_tail": []}

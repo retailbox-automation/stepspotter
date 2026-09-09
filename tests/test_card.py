@@ -2,7 +2,7 @@
 
 from PIL import Image
 
-from stepspotter.marker import SMALL_BOX_AREA, prepare_boxes, render_card, snap_to_grid
+from stepspotter.marker import SMALL_BOX_AREA, fit_title, prepare_boxes, render_card, snap_to_grid
 from stepspotter.models import Box, Step
 
 STEP = Step(
@@ -58,4 +58,39 @@ def test_a_card_renders_with_no_boxes_at_all(photo, tmp_path):
     """The verifier's words are the product; a card must still be useful when the
     model located nothing (which it should do rather than guess)."""
     out = render_card(STEP, 7, photo, [], tmp_path / "bare.jpg")
+    assert out.is_file() and out.stat().st_size > 10_000
+
+
+def test_a_long_title_wraps_to_more_than_one_line_instead_of_clipping():
+    """Real fixture case: 'Step 1 of 9 \u2014 Photograph the existing punch-down
+    wiring' clipped past the card edge as a single un-wrapped line. fit_title must
+    wrap it, never truncate it."""
+    text = "Step 1 of 9 \u2014 Photograph the existing punch-down wiring"
+    lines, font = fit_title(text)
+    assert len(lines) >= 2
+    # No word from the original title is lost — never clip, only wrap/shrink.
+    assert " ".join(lines).replace("  ", " ") == text or set(text.split()) <= set(
+        " ".join(lines).split()
+    )
+
+
+def test_a_short_title_stays_on_one_line_at_full_size():
+    lines, font = fit_title("Step 3 of 7 \u2014 Punch down the blue cable")
+    assert len(lines) == 1
+
+
+def test_render_card_with_a_very_long_title_and_job_name_succeeds(photo, tmp_path):
+    long_step = STEP.model_copy(
+        update={
+            "title": "Confirm the low-voltage panel has no mains breakers before continuing"
+        }
+    )
+    out = render_card(
+        long_step,
+        9,
+        photo,
+        [],
+        tmp_path / "long-title.jpg",
+        job_title="Terminate two long Cat5e cable runs into brand-new keystone jacks at the office wall box",
+    )
     assert out.is_file() and out.stat().st_size > 10_000

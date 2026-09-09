@@ -10,11 +10,11 @@ does not exist.
 
 | Role | What a human in this role would do | Status |
 |---|---|---|
-| **Guide** | The person you actually talk to. Shows you the current step card, takes your photo, relays what the Verifier said in plain words, asks for a retake. | `TODO` |
-| **Planner** | Looks at the job and the first photo, writes the ordered list of steps — each with an action, a "don't touch," and what photo would prove it's done. | `TODO` |
-| **Marker** | Draws on your photo for the card: a highlight where the thing is, a number, the "don't touch" zone in red. | `TODO` |
-| **Verifier** | Looks at your evidence photo and says pass/fail/stop, with a reason. | **Built + spiked** (Spike A) |
-| **Gate** | Physically will not let the Guide say "next step" unless the Verifier already said pass for *this* step. | **Built + spiked** (Spike B) |
+| **Guide** | The person you actually talk to. Shows you the current step card, takes your photo, relays what the Verifier said in plain words, asks for a retake. | **Built** (`src/stepspotter/guide.py`) |
+| **Planner** | Looks at the job and the first photo, writes the ordered list of steps — each with an action, a "don't touch," and what photo would prove it's done. | **Built** (`src/stepspotter/planner.py`) — the safety fork below also lives here |
+| **Marker** | Draws on your photo for the card: a highlight where the thing is, a number, the "don't touch" zone in red. | **Built** (`src/stepspotter/marker.py`) |
+| **Verifier** | Looks at your evidence photo and says pass/fail/stop, with a reason. | **Built + spiked** (`src/stepspotter/verifier.py`, Spike A) |
+| **Gate** | Physically will not let the Guide say "next step" unless the Verifier already said pass for *this* step. | **Built + spiked** (`src/stepspotter/gate.py`, Spike B) |
 | **Safety fork** | Before any of the above starts: is this even a DIY job, or does it need a professional (mains electrical inside a panel, gas, roofing, structural)? | `TODO` (design only, see `diy-vs-vendor-gate.md` reference in the concept doc) |
 | **Memory** | Remembers what's already been done in this house, so the next job doesn't start from zero. | `TODO`, optional (see concept doc §8, cut if time runs out) |
 
@@ -80,10 +80,15 @@ flowchart TD
     style S fill:#69f,color:#fff
 ```
 
-## Files this maps to (once built)
+## Files this maps to
 
-- `src/stepspotter/verifier.py` — Verifier (structured output, per Spike A shapes)
-- `src/stepspotter/gate.py` — Gate (the `StepGate` hook, promoted from `spikes/spike_gate.py`)
-- `src/stepspotter/planner.py`, `marker.py`, `guide.py`, `safety.py`, `memory.py` — `TODO`
-- `tests/test_gate.py` — already covers the Gate contract (6/6 green, no model calls)
+- `src/stepspotter/verifier.py` — Verifier (structured output, per Spike A shapes) — **Built**
+- `src/stepspotter/gate.py` — Gate (the `StepGate` hook, promoted from `spikes/spike_gate.py`) — **Built**
+- `src/stepspotter/planner.py` — Planner, including the safety fork (no separate `safety.py`) — **Built**
+- `src/stepspotter/marker.py` — Marker — **Built**
+- `src/stepspotter/guide.py` — Guide (the tools + agent) — **Built**
+- `src/stepspotter/web/` — the phone-first web UI (FastAPI) — **Built**
+- `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/` — the eval harness + smoke fixtures — **Built**
+- `memory.py` — `TODO`, optional
+- `tests/test_gate.py`, `tests/test_card.py`, and the rest of `tests/` — 40 passed, 1 skipped (`python -m pytest -q`)
 - `docs/EVAL-PLAN.md` — the eval set that exercises Verifier + Gate together against a real job

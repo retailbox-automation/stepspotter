@@ -1,0 +1,32 @@
+# StepSpotter's Guide agent, behind the Amazon Bedrock AgentCore Runtime contract.
+#
+# Separate from the root Dockerfile on purpose: that one serves the phone-first web UI
+# (multipart photo uploads, image responses, an HTML page) and belongs on App Runner.
+# This one serves exactly what the Runtime contract asks for — POST /invocations and
+# GET /ping on port 8080, ARM64 only — and nothing else. See docs/DEPLOY.md.
+#
+#   docker build --platform linux/arm64 -f Dockerfile.agentcore -t stepspotter-agentcore:dev .
+#
+# The --platform pin on FROM is not decoration: AgentCore Runtime rejects anything that
+# is not linux/arm64, and an x86 build only fails after it has been pushed to ECR.
+FROM --platform=linux/arm64 python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8080 \
+    STEPSPOTTER_DATA=/tmp/stepspotter
+
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src ./src
+# .[agentcore] adds bedrock-agentcore, which brings the /invocations + /ping server.
+RUN pip install --no-cache-dir ".[agentcore]" \
+ && useradd --create-home --uid 10001 spotter
+USER spotter
+
+EXPOSE 8080
+# AgentCore polls /ping itself; this only makes a local `docker run` honest.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/ping',timeout=4).status==200 else 1)"
+
+CMD ["python", "-m", "stepspotter.agentcore_entry"]

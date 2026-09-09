@@ -27,7 +27,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
 from stepspotter import planner as _planner
 from stepspotter import store
@@ -199,13 +199,27 @@ def _classify(advance_result: dict, verdict: StepVerdict | None) -> tuple[str, s
     """
     if advance_result["status"] == "interrupt":
         content = advance_result["content"]
-        reason = content.get("message") if isinstance(content, dict) else str(content)
-        return "escalate", reason
+        # ``.get("message")`` can be missing even on a dict, so coerce to str either
+        # way — the reason is always a string, never None.
+        reason = content.get("message", content) if isinstance(content, dict) else content
+        return "escalate", str(reason)
     if advance_result["cancelled"]:
         if verdict is None:
             return "reject-no-photo", str(advance_result["content"])
         return "reject", str(advance_result["content"])
     return "pass", str(advance_result["content"])
+
+
+def _require_state(service: JobService, job_id: str) -> JobState:
+    """``JobService.get`` returns ``None`` when a job is missing; here it never
+    legitimately should be (we just ``put`` it ourselves), so a miss is a bug in
+    the harness or the store, not something to chase as an AttributeError three
+    calls downstream. Fail loudly, at the point where the job went missing.
+    """
+    state = service.get(job_id)
+    if state is None:
+        raise RuntimeError(f"job {job_id!r} disappeared from JobService mid-eval-run")
+    return state
 
 
 # ---------------------------------------------------------------------------
@@ -247,7 +261,7 @@ def _run_step_walk(
         t0 = time.perf_counter()
         verdict = service.verify(state, photo_path)
         dt = time.perf_counter() - t0
-        state = service.get(job_id)
+        state = _require_state(service, job_id)
         adv = run_tool_through_gate(
             gate, tools, "advance_step", {"job_id": job_id, "step_id": state.current + 1}
         )
@@ -255,7 +269,7 @@ def _run_step_walk(
         r.outcomes.append(outcome)
         r.reasons.append(f"{verdict.reason} | {reason}")
         r.latencies_s.append(dt)
-        state = service.get(job_id)
+        state = _require_state(service, job_id)
         if outcome != "pass":
             break  # stuck here this run; do not fabricate outcomes for later steps
 
@@ -287,7 +301,7 @@ def _run_redteam_case(
     if photo_path:
         verdict = service.verify(state, photo_path)
     dt = time.perf_counter() - t0
-    state = service.get(job_id)
+    state = _require_state(service, job_id)
     adv = run_tool_through_gate(
         gate, tools, "advance_step", {"job_id": job_id, "step_id": state.current + 1}
     )

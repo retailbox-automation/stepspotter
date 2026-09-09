@@ -124,3 +124,134 @@ the step itself.
 
 A live run against Bedrock is saved under `data/demo/web-smoke/` — plan, card, both
 gate refusals, the verifier verdict and the trace, straight off the HTTP API.
+
+## AgentCore Runtime — Guide agent
+
+Path B above says the *web UI* does not fit AgentCore Runtime. It still doesn't. What
+does fit is the **Guide agent**, and it is now built and proven locally:
+`src/stepspotter/agentcore_entry.py` wraps `guide.build_agent()` — the same five
+tools, the same `StepGate` hook, the same file-backed trace — in the Runtime's own
+server. **Nothing has been deployed to AWS. No AWS resource has been created.** The
+commands below are for whoever approves that spend.
+
+### The contract, as verified here
+
+`bedrock-agentcore 1.22.0`'s `BedrockAgentCoreApp` is a Starlette app that already
+declares both required routes — `app.routes` gives `/invocations` (POST) and `/ping`
+(GET, HEAD) — so the module only defines what one invocation *means*:
+
+```jsonc
+// POST /invocations
+{"prompt": "I want to add a second network cable.",  // what the person said
+ "job_id": "job-20260909-110551-36b8",               // optional: carry on a repair
+ "task":   "add a second ethernet cable",            // optional: starts a job
+ "photo_b64": "/9j/4AAQ..."}                         // optional: base64 JPEG/PNG
+// ->
+{"text": "...", "job_id": "job-...", "current_step": {...}, "trace_tail": [...]}
+// plus "stop_reason": "interrupt" when the gate stops the run on a hazard,
+// or "error": "bad_photo" | "empty_payload" | "agent_failed" instead of a 500.
+```
+
+Photos travel as base64 because a JSON prompt cannot carry a multipart upload; they go
+through `web.photos.save_upload` (EXIF rotation, downscale) and the tools see the path.
+
+### Proof, on this machine
+
+```bash
+# 1. offline — payload shape, job-id resolution, and a gate refusal through a real HookRegistry
+PYTHONPATH=src "$PY" -m pytest -q tests/test_agentcore_entry.py     # 13 passed
+
+# 2. local server, real Bedrock
+export STEPSPOTTER_DATA=/tmp/ss PORT=8140 PYTHONPATH=src   # 8080 is taken on this Mac
+"$PY" -m stepspotter.agentcore_entry &
+curl -s localhost:8140/ping                                 # {"status":"Healthy",...}
+curl -sX POST localhost:8140/invocations -H 'Content-Type: application/json' \
+     -d '{"prompt":"what can you do?"}'
+
+# 3. the ARM64 image the Runtime actually wants
+docker build --platform linux/arm64 -f Dockerfile.agentcore -t stepspotter-agentcore:dev .
+docker run -d --name ss-ac --platform linux/arm64 -p 8141:8080 \
+  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=us-east-1 \
+  stepspotter-agentcore:dev
+curl -s localhost:8141/ping && docker exec ss-ac python -c "import platform;print(platform.machine())"
+```
+
+All three ran green on 2026-09-09: `/ping` 200, a text turn in 5.2 s, and a
+photo + task turn that planned a 7-step job and came back with step 1 in 44 s
+(planner + marker + card, three Bedrock calls). The container reported `aarch64`.
+Transcripts, including the job trace: `data/demo/agentcore-local/`.
+
+### Deploying it (not done — needs an approved spend)
+
+Two toolchains exist and the Strands docs now point at the newer one:
+
+* **`@aws/agentcore` (npm)** — "the recommended tool for new projects"; the pip starter
+  toolkit prints `The Starter Toolkit CLI is no longer supported` on every command.
+  Install with `npm install -g @aws/agentcore`. **Not installed or tried here**, so its
+  flags are not written down below — read `agentcore --help` first.
+* **`bedrock-agentcore-starter-toolkit` 0.3.12 (pip)** — installed and interrogated
+  here, so the verbs below are its real ones (`launch` is gone; it is `deploy` now):
+
+```bash
+# from the repo root, with AWS creds exported in the SAME command (see above)
+pip install bedrock-agentcore-starter-toolkit
+"$PY" -m pip freeze > requirements.txt      # the toolkit wants a requirements file
+
+agentcore configure --entrypoint src/stepspotter/agentcore_entry.py \
+                    --name stepspotter-guide \
+                    --requirements-file requirements.txt \
+                    --region us-east-1 \
+                    --non-interactive          # execution role + ECR repo auto-created
+
+agentcore deploy                 # cloud CodeBuild builds ARM64 — no local Docker needed
+                                 # --local-build to build with the Docker above instead
+agentcore invoke '{"prompt": "what can you do?"}'
+agentcore status                 # config + runtime details
+```
+
+`agentcore configure` writes `.bedrock_agentcore.yaml` in the repo root (git-ignore it
+if it ends up holding account ids). **Rollback:** `agentcore destroy --dry-run` first,
+then `agentcore destroy --force` — it removes the runtime endpoint, the agent runtime,
+the ECR images, the CodeBuild project and the execution role (add
+`--delete-ecr-repo` for the repository itself).
+
+**IAM.** The deploying identity here is the IAM *user* `fleetmemory-cli`. It can already
+read AgentCore control-plane state (`aws bedrock-agentcore-control list-agent-runtimes
+--region us-east-1` returns `{"agentRuntimes": []}` — nothing deployed on this account
+yet). The rest is **unverified**: a toolkit deploy also needs ECR create/push, CodeBuild
+project + start-build, an S3 source bucket, CloudWatch Logs, `iam:CreateRole` +
+`iam:PassRole` for the execution role it creates, and
+`bedrock-agentcore-control:CreateAgentRuntime` / `bedrock-agentcore:InvokeAgentRuntime`.
+The *execution role* the runtime assumes needs `bedrock:InvokeModel` (the planner,
+marker and verifier all call Bedrock), ECR pull, and Logs write. Expect the first
+`agentcore deploy` to fail on a missing permission and read the error rather than
+pre-granting a wildcard.
+
+**Cost.** Consumption-based: AgentCore Runtime bills for the CPU/memory a session
+actually consumes (sessions are idle-timed out; `--idle-timeout` defaults to 900 s),
+*plus* the Bedrock tokens each turn spends, plus ECR storage, CodeBuild minutes and
+CloudWatch. The 44 s photo turn above is three model calls, so a demo session is not
+free. Current rates: the Bedrock AgentCore pricing page — do not quote from here.
+
+**Verify after deploying.** `agentcore invoke '{"prompt":"what can you do?"}'` (a
+`runtimeSessionId` must be 33+ characters if you call `invoke_agent_runtime` with boto3
+directly), then CloudWatch logs for the runtime, then a photo turn — the answer must
+carry a `job_id` and a `trace_tail`, and the trace is what proves the gate ran.
+
+### Known gaps, stated plainly
+
+* **State is per-session and disposable.** `STEPSPOTTER_DATA=/tmp/stepspotter` in
+  `Dockerfile.agentcore`. AgentCore gives each `runtimeSessionId` its own microVM, so
+  that directory is private to one repair — and gone when the session ends. Jobs,
+  cards and traces belong in S3 for anything real; `store.py` is the seam.
+* **No AgentCore Memory.** The Guide uses `FileSessionManager` keyed by `job_id`, which
+  lives in that same disposable `/tmp`.
+* **No observability wiring.** Turning on CloudWatch traces means adding
+  `aws-opentelemetry-distro` and running `opentelemetry-instrument python -m
+  stepspotter.agentcore_entry`; the toolkit does this itself unless you pass
+  `--disable-otel`. Untried here.
+* **The image floats.** `pyproject.toml` pins `strands-agents>=1.54.0`, so the ARM64
+  build pulled 1.55.0 while the local venv is on 1.54.0. Pin before a deploy you
+  intend to keep.
+* **No auth.** `/invocations` is protected by IAM at the Runtime boundary, not by
+  anything in this code.

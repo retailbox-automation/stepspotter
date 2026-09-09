@@ -122,8 +122,10 @@ PAD = 28
 @dataclass
 class _Fonts:
     title: ImageFont.ImageFont
+    title_small: ImageFont.ImageFont
     body: ImageFont.ImageFont
     small: ImageFont.ImageFont
+    small2: ImageFont.ImageFont
     badge: ImageFont.ImageFont
 
 
@@ -134,7 +136,9 @@ def _fonts() -> _Fonts:
         except Exception:  # noqa: BLE001 - any box without that font
             return ImageFont.load_default()
 
-    return _Fonts(title=f(40), body=f(25), small=f(20), badge=f(30))
+    return _Fonts(
+        title=f(40), title_small=f(30), body=f(25), small=f(20), small2=f(16), badge=f(30)
+    )
 
 
 def _wrap(draw: ImageDraw.ImageDraw, text: str, font, width: int) -> list[str]:
@@ -154,6 +158,35 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, width: int) -> list[str]:
 
 def _line_h(font) -> int:
     return int(getattr(font, "size", 20) * 1.45)
+
+
+def fit_title(text: str, width: int = CARD_W - 2 * PAD, max_lines: int = 2) -> tuple[list[str], "ImageFont.ImageFont"]:
+    """Wrap the card title to at most ``max_lines``, shrinking the font once if a
+    long title (e.g. a long step name) does not fit at the normal size.
+
+    A step title with a long job name plus a wordy step name used to be drawn as
+    one un-wrapped line and clipped past the card edge. This never clips: if the
+    title still does not fit in ``max_lines`` at the smaller font, all wrapped
+    lines are returned anyway (the card grows taller) rather than dropping words.
+    """
+    fonts = _fonts()
+    probe = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    lines = _wrap(probe, text, fonts.title, width)
+    if len(lines) <= max_lines:
+        return lines, fonts.title
+    lines = _wrap(probe, text, fonts.title_small, width)
+    return lines, fonts.title_small
+
+
+def fit_subtitle(text: str, width: int = CARD_W - 2 * PAD, max_lines: int = 2) -> tuple[list[str], "ImageFont.ImageFont"]:
+    """Same idea as ``fit_title`` for the job-name subtitle under the step title."""
+    fonts = _fonts()
+    probe = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    lines = _wrap(probe, text, fonts.small, width)
+    if len(lines) <= max_lines:
+        return lines, fonts.small
+    lines = _wrap(probe, text, fonts.small2, width)
+    return lines, fonts.small2
 
 
 def _draw_boxes_on_photo(img: Image.Image, boxes: list[Box]) -> Image.Image:
@@ -239,7 +272,13 @@ def render_card(
     rows.append(("", fonts.small, INK, 0))
     para("Next photo must show: " + step.evidence_required, fonts.body, GREEN)
 
-    head_h = _line_h(fonts.title) + (_line_h(fonts.small) if job_title else 0) + 10
+    title_text = f"Step {step.id} of {total} — {step.title}"
+    title_lines, title_font = fit_title(title_text, inner)
+    subtitle_lines, subtitle_font = fit_subtitle(job_title, inner) if job_title else ([], fonts.small)
+
+    head_h = sum(_line_h(title_font) for _ in title_lines)
+    head_h += sum(_line_h(subtitle_font) for _ in subtitle_lines)
+    head_h += 10
     body_h = sum(_line_h(f) for _t, f, _c, _i in rows)
     H = PAD + head_h + 12 + ph + 18 + body_h + PAD
 
@@ -247,11 +286,12 @@ def render_card(
     d = ImageDraw.Draw(card)
     y = PAD
 
-    d.text((PAD, y), f"Step {step.id} of {total} — {step.title}", fill=INK, font=fonts.title)
-    y += _line_h(fonts.title)
-    if job_title:
-        d.text((PAD, y), job_title, fill=GREY, font=fonts.small)
-        y += _line_h(fonts.small)
+    for ln in title_lines:
+        d.text((PAD, y), ln, fill=INK, font=title_font)
+        y += _line_h(title_font)
+    for ln in subtitle_lines:
+        d.text((PAD, y), ln, fill=GREY, font=subtitle_font)
+        y += _line_h(subtitle_font)
     y += 10
     d.line([PAD, y, CARD_W - PAD, y], fill=(220, 220, 220), width=2)
     y += 12

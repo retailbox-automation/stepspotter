@@ -118,6 +118,18 @@ polite.
 - Safety-fork triage (mains electrical, gas, roofing → "call a pro," not steps).
 - Optional: memory of what's already been done in a given house, across jobs.
 
+## Status
+
+| Piece | Status |
+|---|---|
+| Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
+| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`, 40 tests passing (`python -m pytest -q`) |
+| Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/` |
+| Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/` |
+| Docker image | ✅ Builds locally (`docker build .`) |
+| Deploy (live URL) | ⏳ Pending — see `docs/DEPLOY.md` |
+| Submission video | ⏳ Pending |
+
 ## Setup
 
 ```bash
@@ -127,33 +139,50 @@ python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Bedrock creds must be exported **in the same shell command** you run — an ambient
-`~/.aws/credentials` for a different account will otherwise produce a
+Bedrock creds — export **in the same shell command** you run the app with; an
+ambient `~/.aws/credentials` for a different account otherwise produces a
 `ValidationException: Operation not allowed` that looks like throttling but isn't:
 
 ```bash
-export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_DEFAULT_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_DEFAULT_REGION=us-east-1
 ```
 
 Model access on your AWS account must include Anthropic models on Bedrock in
-`us-east-1` (Claude Sonnet/Haiku via the `global.anthropic.*` / `us.anthropic.*`
-model IDs — no separate opt-in was needed on the account these spikes ran on).
+`us-east-1` — Claude Sonnet 4.6 (`global.anthropic.claude-sonnet-4-6`, the default)
+and Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5`); no separate opt-in was
+needed on the account these spikes ran on.
 
 Run what's real today, offline, no AWS needed:
 
 ```bash
-python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract
+python -m pytest -q                      # 40 passed, 1 skipped — the full suite
+python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract on its own
 ```
 
-Run the live Bedrock spikes (need the AWS export above):
+Run the phone-first web UI (needs the AWS export above):
+
+```bash
+stepspotter serve --port 8137
+```
+Then open `http://<your-machine's-LAN-ip>:8137` on a phone — the photo inputs use
+`capture="environment"` and open the rear camera directly. Full deploy notes
+(App Runner, AgentCore Runtime, Docker): `docs/DEPLOY.md`.
+
+Run the eval harness against the checked-in smoke fixture (needs the AWS export
+above — it makes real Bedrock calls):
+
+```bash
+stepspotter eval fixtures/ --repeat 2
+```
+
+Run the live Bedrock spikes:
 
 ```bash
 python spikes/spike_vision.py            # Verifier + bounding-box spike
 python spikes/spike_gate.py              # Live gate integration run
 ```
-
-`TODO` — one-command demo of the full Guide → Planner → Marker → Verifier → Gate
-loop; not built yet.
 
 ## Safety note
 
