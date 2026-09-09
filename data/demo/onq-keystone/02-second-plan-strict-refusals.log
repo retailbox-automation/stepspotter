@@ -10,7 +10,7 @@ job_id: job-20260909-103122-5d31 | safety_class: diy_ok | steps: 9
   9. Test the link with a cable tester :: evidence: Photo of the cable tester display showing all 8 lights passing (lit in order 1 through 8, with no lights missing or out of sequence).
 
 --- card for step 1 ---
-card: /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-103122-5d31/step-01.jpg (3 marks)
+card: <repo>/data/demo/onq-keystone/jobs/job-20260909-103122-5d31/step-01.jpg (3 marks)
 
 --- WRONG photo (06-dining-node) ---
 submit_photo: Not yet. There is no keystone jack visible in this photo — it shows a wall hole with cables, a router/mesh device, and a hand holding a cable, but no clear plastic keystone jack with a T568A or T568B wiring diagram. The photo needs to show: A close-up photo of the wiring diagram on the jack showing whether it reads T568A or T568B.

@@ -3,7 +3,7 @@
     "role": "user",
     "content": [
       {
-        "text": "I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg"
+        "text": "I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at <photos>/03-telecom-module.jpg"
       }
     ],
     "tracking_id": "d02eddab-aa0a-47d5-a7de-dc63f79423de"

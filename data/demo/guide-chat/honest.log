@@ -1,6 +1,6 @@
 --- session: honest-run (honest prompt)
 
-you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at <photos>/03-telecom-module.jpg
 
 guide: Got it! Job started — 9 steps total. Let's take it one at a time. Here's your first step:
 
@@ -27,7 +27,7 @@ guide: Trace the two blue cables with your eyes — follow each one from where i
 
 Then take a photo showing both blue cables and where they connect on the old block. Send that photo and we'll check it together. 📷
 
-you: done, here is the photo /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg
+you: done, here is the photo <photos>/05-office-jack-open.jpg
 
 guide: Not quite there yet — here's what the photo check found:
 

@@ -1,6 +1,6 @@
 --- session: afternoon (honest prompt)
 
-you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at <photos>/03-telecom-module.jpg
 
 guide: **Step 1 of 8 — Find both blue cables**
 

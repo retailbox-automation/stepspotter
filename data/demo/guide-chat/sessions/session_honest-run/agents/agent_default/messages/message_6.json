@@ -3,7 +3,7 @@
     "role": "user",
     "content": [
       {
-        "text": "done, here is the photo /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg"
+        "text": "done, here is the photo <photos>/05-office-jack-open.jpg"
       }
     ],
     "tracking_id": "d42b411f-f81d-40da-86c0-b850b51ed0c8"

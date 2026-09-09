@@ -5,7 +5,7 @@ from stepspotter import store
 from stepspotter.gate import StepGate
 from stepspotter.guide import JobService, build_tools, run_tool_through_gate
 
-P = "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq"
+P = "<photos>"
 TASK = ("Terminate the blue Cat5e cable into the keystone jack in this office wall box, "
         "then close the box and test the link with a cable tester")
 

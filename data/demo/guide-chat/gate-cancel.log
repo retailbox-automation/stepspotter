@@ -1,6 +1,6 @@
 --- session: gate-run (permissive prompt)
 
-you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at <photos>/03-telecom-module.jpg
 
 guide: Job's created! Here's everything you need to know to get started. 🎉
 
@@ -49,7 +49,7 @@ guide: You're on **Step 1** — here's a quick summary of what to do first:
 
 That's it! Once they're labeled, snap a photo and send it over so we can check it off and move to Step 2. 📸
 
-you: done, here is the photo /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg
+you: done, here is the photo <photos>/05-office-jack-open.jpg
 
 guide: Almost there! The blue cables are visible in the photo, but the checker couldn't see the **"Cable A" and "Cable B" labels** on them yet.
 

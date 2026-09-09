@@ -14,7 +14,7 @@ from stepspotter.gate import StepGate
 from stepspotter.guide import JobService, build_tools, run_tool_through_gate
 from stepspotter.models import JobState, Plan, Step
 
-P = "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq"
+P = "<photos>"
 
 plan = Plan(
     job_title="Terminate the office jack",

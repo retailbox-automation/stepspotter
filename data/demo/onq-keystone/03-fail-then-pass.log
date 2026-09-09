@@ -1,7 +1,7 @@
 job_id: job-20260909-103247-8b90 (plan hand-written, verdicts live)
 
 --- card for step 1 ---
-card: /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-103247-8b90/step-01.jpg
+card: <repo>/data/demo/onq-keystone/jobs/job-20260909-103247-8b90/step-01.jpg
    [act] keystone jack (0.28,0.72)-(0.58,1.00)
    [act] terminated wire pairs (0.27,0.60)-(0.57,0.80)
    [avoid] the black coax cable (0.42,0.30)-(0.65,0.72)

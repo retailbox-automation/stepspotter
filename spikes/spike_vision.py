@@ -25,7 +25,7 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE / "out"
 OUT.mkdir(parents=True, exist_ok=True)
 PHOTOS = Path(
-    "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/"
+    "<workspace>/"
     "docs/design-reference-2026-09-09/raw-photos-onq"
 )
 MAX_PX = 1280

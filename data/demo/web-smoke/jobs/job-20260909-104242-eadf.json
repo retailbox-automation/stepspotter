@@ -1,7 +1,7 @@
 {
   "job_id": "job-20260909-104242-eadf",
   "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link",
-  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/web-smoke/jobs/job-20260909-104242-eadf/start.jpg",
+  "start_photo": "<repo>/data/demo/web-smoke/jobs/job-20260909-104242-eadf/start.jpg",
   "plan": {
     "job_title": "Terminate two Cat5e cables to keystones",
     "safety_class": "diy_ok",
@@ -205,7 +205,7 @@
     }
   },
   "card_paths": {
-    "0": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/web-smoke/jobs/job-20260909-104242-eadf/step-01.jpg"
+    "0": "<repo>/data/demo/web-smoke/jobs/job-20260909-104242-eadf/step-01.jpg"
   },
   "created_at": "2026-09-09T14:43:20+00:00",
   "updated_at": "2026-09-09T14:43:47+00:00"

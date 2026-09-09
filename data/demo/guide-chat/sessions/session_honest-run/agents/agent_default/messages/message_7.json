@@ -8,7 +8,7 @@
           "name": "submit_photo",
           "input": {
             "job_id": "job-20260909-111442-c531",
-            "photo_path": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg"
+            "photo_path": "<photos>/05-office-jack-open.jpg"
           }
         }
       }

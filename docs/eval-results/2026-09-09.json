@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-09-09T15:17:40+00:00",
-  "fixtures_root": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures",
+  "fixtures_root": "<repo>/fixtures",
   "repeat": 1,
   "summary": {
     "steps_confirmed": "3/3",
@@ -14,7 +14,7 @@
       "job": "onq-keystone-smoke",
       "target_step": 1,
       "expected": "pass",
-      "photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures/onq-keystone-smoke/steps/01-confirm-panel.jpg",
+      "photo": "<repo>/fixtures/onq-keystone-smoke/steps/01-confirm-panel.jpg",
       "outcomes": [
         "pass"
       ],
@@ -33,7 +33,7 @@
       "job": "onq-keystone-smoke",
       "target_step": 2,
       "expected": "pass",
-      "photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures/onq-keystone-smoke/steps/02-seat-pairs.jpg",
+      "photo": "<repo>/fixtures/onq-keystone-smoke/steps/02-seat-pairs.jpg",
       "outcomes": [
         "pass"
       ],
@@ -52,7 +52,7 @@
       "job": "onq-keystone-smoke",
       "target_step": 3,
       "expected": "pass",
-      "photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/fixtures/onq-keystone-smoke/steps/03-telecom-landing.jpg",
+      "photo": "<repo>/fixtures/onq-keystone-smoke/steps/03-telecom-landing.jpg",
       "outcomes": [
         "pass"
       ],

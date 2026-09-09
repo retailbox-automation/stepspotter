@@ -5,7 +5,7 @@ from stepspotter import store
 from stepspotter.gate import StepGate
 from stepspotter.guide import JobService, build_tools, run_tool_through_gate
 
-P = "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq"
+P = "<photos>"
 TASK = ("Connect the two blue Cat5e network cables from the old phone block to new keystone "
         "jacks and join them with a patch cord, then test the link")
 

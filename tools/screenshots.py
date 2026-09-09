@@ -8,7 +8,7 @@ set by this script itself (not inherited) so the run is isolated:
 
     while IFS='=' read -r key val; do
       case "$key" in AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_DEFAULT_REGION) export "$key=$val";; esac
-    done < "/Users/oskolamicheal/Projects/Retailbox - CockroachDB Hackathon/.env"
+    done < "<home>/Projects/Retailbox - CockroachDB Hackathon/.env"
     PY=".../spike/.venv/bin/python"
     "$PY" tools/screenshots.py
 """

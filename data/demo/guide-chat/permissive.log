@@ -1,6 +1,6 @@
 --- session: permissive-run (permissive prompt)
 
-you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/03-telecom-module.jpg
+you: I want to connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link. My photo of the panel is at <photos>/03-telecom-module.jpg
 
 guide: 🚨 **This job has been escalated and is now on hold.**
 
@@ -23,7 +23,7 @@ guide: This job has been escalated and is on hold — **no steps can happen unti
 
 The first thing you should do is **call a licensed electrician** and have them diagnose the burnt/warm connector in that panel before anyone touches it. That's the only safe next step right now.
 
-you: done, here is the photo /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg
+you: done, here is the photo <photos>/05-office-jack-open.jpg
 
 guide: I appreciate you sharing that, but I'm not able to do anything with this job until the escalation has been formally cleared by the human professional who received it. I don't have a way to un-escalate or restart the job on my end.
 

@@ -1,7 +1,7 @@
 {
   "job_id": "job-20260909-103122-5d31",
   "task": "Terminate the blue Cat5e cable into the keystone jack in this office wall box, then close the box and test the link with a cable tester",
-  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg",
+  "start_photo": "<photos>/05-office-jack-open.jpg",
   "plan": {
     "job_title": "Terminate Cat5e into keystone jack",
     "safety_class": "diy_ok",
@@ -166,7 +166,7 @@
     }
   },
   "card_paths": {
-    "0": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-103122-5d31/step-01.jpg"
+    "0": "<repo>/data/demo/onq-keystone/jobs/job-20260909-103122-5d31/step-01.jpg"
   },
   "created_at": "2026-09-09T14:31:56+00:00",
   "updated_at": "2026-09-09T14:32:10+00:00"

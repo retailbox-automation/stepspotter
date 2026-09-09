@@ -50,7 +50,7 @@ tools: ['Punch-down tool (a small handle with a blade that pushes wire into a te
      evidence: Photo shows all 8 LEDs lit on both the MAIN and REMOTE units of the cable tester simultaneously.
 
 === 2. SHOW STEP 1 (card) ===
-card: /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-102907-6057/step-01.jpg
+card: <repo>/data/demo/onq-keystone/jobs/job-20260909-102907-6057/step-01.jpg
    [act] blue Cat5e cables entering the phone/punch-down block (0.08,0.00)-(0.75,0.55)
    [act] individual wire colors in the terminal slots (0.18,0.38)-(0.72,0.52)
    [avoid] coaxial (TV cable) connectors and splitter (0.22,0.22)-(0.72,0.42)
