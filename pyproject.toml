@@ -1,0 +1,15 @@
+[project]
+name = "stepspotter"
+version = "0.0.1"
+description = "One step at a time on your photo; next step unlocks only when a photo proves the last one was done safely. Built on Strands Agents."
+requires-python = ">=3.12"
+license = {text = "MIT"}
+dependencies = [
+  "strands-agents>=1.54.0",
+  "strands-agents-tools>=0.8.7",
+  "pillow>=11",
+  "pydantic>=2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
