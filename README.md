@@ -1,15 +1,180 @@
 # StepSpotter
 
-One step at a time, on *your* photo — and the next step stays locked until your photo proves the last one was done safely.
+**One small step at a time, on *your own* photo — and the next step stays locked
+until your photo proves the last one was done safely.**
 
-Built with **Strands Agents** (AWS) for the Agents for Humans hackathon, Everyday Agents track. Work in progress — submission window 2026-09-02 … 2026-09-14.
+Built with **Strands Agents** (AWS) for the Agents for Humans hackathon, Everyday
+Agents track.
 
-## Status
-- [x] Spike A: vision verdict + bounding boxes on real photos (verdict 8/8 stable; boxes rough, small parts drift — see spikes/SPIKE-A-RESULT.md)
-- [x] Spike B: `BeforeToolCall` gate on `advance_step` (6/6 tests, live cancel proven — spikes/SPIKE-B-RESULT.md)
-- [ ] Core: Planner → Marker → Verifier → Gate
-- [ ] Web UI (phone-first)
-- [ ] Eval set + red-team photos
-- [ ] Deploy + demo video
+## Inspiration
 
-License: MIT (see `LICENSE`).
+I never owned a home. I grew up in an apartment, and every place I lived in as an
+adult was rented. Then my kids were born and we moved to Orlando and bought a
+house — and I realized I didn't know how to do even the simplest things around it.
+Not because I'm not capable. Nobody ever showed me.
+
+What actually works for me is my phone. I take a photo, and someone explains it
+back to me on that exact photo — a circle around the part I need, an arrow, "not
+this one, that one." Simple language, one thing at a time. That's the only way
+instructions have ever clicked for me, and it's the only reason I got through
+replacing a UPS battery and terminating network jacks in my own low-voltage panel
+this month without calling someone.
+
+StepSpotter is that, built into an agent, with one rule I insisted on: it can't
+just take my word that a step is done. It has to see it.
+
+## What it does
+
+You give StepSpotter one repair job and a first photo. It hands you back **one
+step**, not a wall of instructions — what to do, what not to touch, and what your
+next photo needs to show. You do the step, send a photo, and the agent checks it.
+If the photo doesn't prove the step is done, it tells you why in plain words and
+asks for another one. It will not move you forward on your say-so alone.
+
+That refusal isn't a prompt asking the model to be careful — it's a piece of code
+that runs before the "next step" tool is even allowed to fire. No amount of
+insisting talks it past a step it hasn't seen evidence for.
+
+## How we built it
+
+Six roles, named like a small crew rather than software layers:
+
+- **Guide** — the agent you talk to; shows the step card, takes your photo.
+- **Planner** — turns the job + a first photo into an ordered list of steps, each
+  with its own "don't touch" and its own required evidence photo.
+- **Marker** — draws a highlight on your photo for the card.
+- **Verifier** — a separate agent whose only job is to look at your evidence photo
+  and return a typed verdict: pass, fail, or stop, with a reason.
+- **Gate** — a Strands `BeforeToolCall` hook that cancels the "move to next step"
+  tool call in code unless the Verifier already passed the current step.
+- **Safety fork** — before any of this starts: is this actually a DIY job, or does
+  it need a professional?
+
+Full role-by-role breakdown, the Strands feature behind each one, and a diagram:
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+**Strands Agents** is the SDK end to end: typed `structured_output` for the
+Verifier's verdict (not free-text parsing), and a `BeforeToolCallEvent` hook for
+the gate itself — verified against strands-agents 1.54.0 by live introspection and
+real Bedrock calls, not from the docs alone (`spikes/SPIKE-A-RESULT.md`,
+`spikes/SPIKE-B-RESULT.md`).
+
+## The checkable number
+
+An eval set built around a real job — an OnQ low-voltage panel, two Cat5e runs
+terminated into keystone jacks, patch cords, cable-tester checks — as 12 steps
+with a required evidence photo each, plus a red-team set of deliberately wrong
+photos (wrong object, a step skipped ahead, no photo at all, an unsafe state, a
+photo too blurry to judge). Every result — including every miss — gets published.
+Plan and fixture layout: [`docs/EVAL-PLAN.md`](docs/EVAL-PLAN.md).
+
+## Challenges we ran into
+
+- **The vision model's bounding boxes drift.** On real, cluttered photos of a
+  low-voltage panel, boxes routinely landed low and oversized, and small hardware
+  in clutter (a splitter, a connector) was the worst case — 3 tight hits out of 14
+  boxes. We measured it rather than assumed it, and the fix is to treat a box as a
+  soft highlight, never a crisp "it is exactly here" claim (`spikes/SPIKE-A-RESULT.md`).
+- **Confidence scores are not stable run to run — the pass/fail boolean is.** The
+  same photo, the same claim, gave confidence 0.82 on one run and 0.20 on the next
+  for an identical, correct refusal. We do not gate on confidence anywhere in this
+  system; we gate on the boolean and read the reason.
+- **A well-behaved model hides a broken gate.** With an honest system prompt, the
+  model simply refused to skip steps on its own — which proves nothing about
+  whether the code gate actually works. We had to write a deliberately permissive
+  prompt for the integration test, so the *only* thing stopping the agent was the
+  hook, not its manners.
+- **The field is crowded and vision is fragile outside a staged demo.** Several
+  existing tools diagnose a photo of a repair; almost none of them refuse to let
+  you proceed until a *second* photo proves you actually did it. That refusal is
+  the whole point, and it is also the piece most likely to break on a bad photo —
+  which is why the eval set exists at all.
+
+## Accomplishments
+
+- A code-level gate — not a prompt — that a permissive, "just do what they say"
+  system prompt could not talk past, proven live against Bedrock, not just in a
+  unit test.
+- 8/8 correct pass/fail verdicts on real photos of a real panel, including every
+  case where the claimed object simply wasn't in the frame.
+- A named, reasoned failure mode for the one part of the system that isn't
+  reliable yet (bounding-box precision), with a concrete mitigation instead of a
+  silent gap.
+
+## What we learned
+
+Refusing to let someone "just claim" a step is done is a harder engineering
+problem than describing what's in a photo — and it's also the actual product.
+The interesting part of this build wasn't getting a vision model to draw a box;
+it was making the "no" enforceable in code instead of hoping the model stays
+polite.
+
+## What's next
+
+- Finish the Guide/Planner/Marker roles and wire them to the already-proven
+  Verifier + Gate.
+- Run the full eval set in `docs/EVAL-PLAN.md` and publish every result.
+- A phone-first web UI and a live deployment.
+- Safety-fork triage (mains electrical, gas, roofing → "call a pro," not steps).
+- Optional: memory of what's already been done in a given house, across jobs.
+
+## Setup
+
+```bash
+git clone <this repo>
+cd stepspotter
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+Bedrock creds must be exported **in the same shell command** you run — an ambient
+`~/.aws/credentials` for a different account will otherwise produce a
+`ValidationException: Operation not allowed` that looks like throttling but isn't:
+
+```bash
+export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_DEFAULT_REGION=us-east-1
+```
+
+Model access on your AWS account must include Anthropic models on Bedrock in
+`us-east-1` (Claude Sonnet/Haiku via the `global.anthropic.*` / `us.anthropic.*`
+model IDs — no separate opt-in was needed on the account these spikes ran on).
+
+Run what's real today, offline, no AWS needed:
+
+```bash
+python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract
+```
+
+Run the live Bedrock spikes (need the AWS export above):
+
+```bash
+python spikes/spike_vision.py            # Verifier + bounding-box spike
+python spikes/spike_gate.py              # Live gate integration run
+```
+
+`TODO` — one-command demo of the full Guide → Planner → Marker → Verifier → Gate
+loop; not built yet.
+
+## Safety note
+
+This is a DIY helper for low-voltage, low-consequence work — network cabling,
+low-voltage panels, simple hardware swaps. **It is not for mains electrical work
+inside a breaker panel, gas lines, roofing, or structural work.** Left unbuilt on
+purpose: the safety fork that should refuse to plan those jobs at all and tell you
+to call a professional instead. Until that exists, treat this as a tool for the
+kind of job you'd already be comfortable doing with a good YouTube video and a
+multimeter — nothing that can shock, burn, or collapse on you.
+
+## Disclosure
+
+No pre-existing code from any other project is in this repository. What carries
+over is a *format*, not code: the annotated-photo step-card idea comes from a
+personal practice of asking Claude to mark up my own home-repair photos by hand,
+documented as a standing habit before this hackathon began
+(`docs/design-reference-2026-09-09/`, referenced for format only). Everything in
+`src/`, `spikes/`, and `tests/` was written new during the Submission Period, with
+an AI coding assistant, as the rules allow.
+
+## License
+
+MIT (see `LICENSE`).

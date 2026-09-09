@@ -9,3 +9,8 @@ credentials*.json
 .DS_Store
 .claude/settings.local.json
 spikes/out/
+
+# runtime job state; the committed demo under data/demo/ is the exception
+data/
+!data/demo/
+!data/demo/**

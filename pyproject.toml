@@ -11,5 +11,19 @@ dependencies = [
   "pydantic>=2",
 ]
 
+[project.scripts]
+stepspotter = "stepspotter.cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = ["integration: hits Bedrock; needs AWS credentials"]
+testpaths = ["tests"]
