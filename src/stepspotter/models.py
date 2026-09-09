@@ -143,10 +143,15 @@ class JobState(BaseModel):
         default_factory=dict, description="keyed by zero-based step index"
     )
     card_paths: dict[int, str] = Field(default_factory=dict)
+    box_sets: dict[int, list[Box]] = Field(
+        default_factory=dict,
+        description="the boxes drawn for each step, keyed by zero-based step index, in "
+        "badge order — so the legend under the photo can be written as real text",
+    )
     created_at: str = Field(default_factory=_now)
     updated_at: str = Field(default_factory=_now)
 
-    @field_validator("verdicts", "card_paths", mode="before")
+    @field_validator("verdicts", "card_paths", "box_sets", mode="before")
     @classmethod
     def _int_keys(cls, v: object) -> object:
         """JSON turns int keys into strings; turn them back on load."""

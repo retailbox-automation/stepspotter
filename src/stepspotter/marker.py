@@ -223,6 +223,32 @@ def _draw_boxes_on_photo(img: Image.Image, boxes: list[Box]) -> Image.Image:
     return canvas
 
 
+PHOTO_W = 1200
+
+
+def render_marked_photo(
+    photo_path: str, boxes: list[Box], dest: str | Path, width: int = PHOTO_W
+) -> Path:
+    """The photo with numbered coloured boxes on it and NOTHING else.
+
+    This is what the phone shows. The web page owns the words — title, action, the
+    do-not-touch list, the stop condition — as real HTML text, so a step is read once
+    rather than twice, and the text stays selectable, translatable and screen-readable
+    at whatever size the phone is set to. Baking the same sentences into the JPEG as
+    well is how the first build ended up with a page you had to scroll past its own
+    duplicate. ``render_card`` keeps the printed-sheet layout for the CLI and eval.
+    """
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    _bytes, photo = load_photo(photo_path)
+    marked = _draw_boxes_on_photo(photo, prepare_boxes(boxes))
+    if marked.width != width:
+        h = int(marked.height * (width / marked.width))
+        marked = marked.resize((width, h), Image.LANCZOS)
+    marked.save(dest, quality=92)
+    return dest
+
+
 def render_card(
     step: Step,
     total: int,
@@ -230,10 +256,18 @@ def render_card(
     boxes: list[Box],
     dest: str | Path,
     job_title: str = "",
+    layout: str = "card",
 ) -> Path:
-    """Render one step card to ``dest``. No model calls — pure PIL, so tests can run it."""
+    """Render one step to ``dest``. No model calls — pure PIL, so tests can run it.
+
+    ``layout="card"`` (default) is the printed sheet: title, photo, legend, the step
+    written underneath in the same colours. ``layout="photo"`` is the photo and its
+    boxes alone, for a surface that renders the words itself.
+    """
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
+    if layout == "photo":
+        return render_marked_photo(photo_path, boxes, dest)
 
     _bytes, photo = load_photo(photo_path)
     boxes = prepare_boxes(boxes)
@@ -316,7 +350,8 @@ def make_card(
     job_title: str = "",
     model_id: str | None = None,
     boxes: list[Box] | None = None,
+    layout: str = "card",
 ) -> tuple[Path, list[Box]]:
     """Locate then render. Pass ``boxes`` to skip the model call."""
     found = boxes if boxes is not None else locate(step, photo_path, model_id)
-    return render_card(step, total, photo_path, found, dest, job_title), found
+    return render_card(step, total, photo_path, found, dest, job_title, layout), found

@@ -114,18 +114,40 @@ class JobService:
         )
         return state
 
-    def card(self, state: JobState, photo_path: str | None = None) -> tuple[Path, list[Box]]:
-        """Render the card for the current step onto a photo (the start photo by default)."""
+    def card(
+        self,
+        state: JobState,
+        photo_path: str | None = None,
+        layout: str = "card",
+    ) -> tuple[Path, list[Box]]:
+        """Render the current step onto a photo (the start photo by default).
+
+        ``layout="photo"`` draws the boxes and nothing else, for the web page, which
+        writes the words itself. Boxes located once are reused for the other layout of
+        the same step: locating is a model call, and the badge numbers on the two
+        renders must agree with each other and with the legend the page prints.
+        """
         step = state.current_step()
         if step is None:
             raise ValueError("this job has no step in progress")
         photo = photo_path or state.start_photo
-        dest = store.cards_dir(state.job_id) / f"step-{step.id:02d}.jpg"
-        boxes = self.locate_fn(step, photo, self.model_id)
+        suffix = "-photo" if layout == "photo" else ""
+        dest = store.cards_dir(state.job_id) / f"step-{step.id:02d}{suffix}.jpg"
+        known = state.box_sets.get(state.current) if photo_path is None else None
+        boxes = list(known) if known is not None else self.locate_fn(step, photo, self.model_id)
         path = marker.render_card(
-            step, state.total, photo, boxes, dest, job_title=state.plan.job_title
+            step,
+            state.total,
+            photo,
+            boxes,
+            dest,
+            job_title=state.plan.job_title,
+            layout=layout,
         )
-        state.card_paths[state.current] = str(path)
+        if layout != "photo":
+            state.card_paths[state.current] = str(path)
+        if photo_path is None:
+            state.box_sets[state.current] = list(boxes)
         self.put(state)
         store.trace(
             state.job_id,
