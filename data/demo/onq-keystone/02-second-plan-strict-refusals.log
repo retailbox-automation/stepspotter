@@ -1,0 +1,26 @@
+job_id: job-20260909-103122-5d31 | safety_class: diy_ok | steps: 9
+  1. Identify the wiring diagram on the jack :: evidence: A close-up photo of the wiring diagram on the jack showing whether it reads T568A or T568B.
+  2. Strip the blue cable's outer jacket :: evidence: Photo showing the blue jacket removed and four colour-coded twisted pairs visible, with no nicks on any inner wire.
+  3. Untwist and straighten each pair :: evidence: Photo showing all eight individual wires straightened and lined up against the jack's colour-coded slots, not yet pressed in.
+  4. Seat each wire into its correct jack slot :: evidence: Photo showing all eight wires lying in their correct colour-labelled slots, visible from above.
+  5. Punch down all wires with the punch tool :: evidence: Photo showing all eight wire ends trimmed flush, with no excess wire sticking up above the jack body.
+  6. Snap the cap onto the jack :: evidence: Photo showing the yellow cap fully closed and flat against the top of the jack.
+  7. Snap the jack into the faceplate :: evidence: Photo showing the jack sitting flush and level in the faceplate with no gaps around its edges.
+  8. Fold cable and mount faceplate to box :: evidence: Photo showing the faceplate sitting flat against the wall with the screw tightened and no cable pinched at the edges.
+  9. Test the link with a cable tester :: evidence: Photo of the cable tester display showing all 8 lights passing (lit in order 1 through 8, with no lights missing or out of sequence).
+
+--- card for step 1 ---
+card: /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-103122-5d31/step-01.jpg (3 marks)
+
+--- WRONG photo (06-dining-node) ---
+submit_photo: Not yet. There is no keystone jack visible in this photo — it shows a wall hole with cables, a router/mesh device, and a hand holding a cable, but no clear plastic keystone jack with a T568A or T568B wiring diagram. The photo needs to show: A close-up photo of the wiring diagram on the jack showing whether it reads T568A or T568B.
+advance: error | cancelled: True 
+   Blocked: step 1 (Identify the wiring diagram on the jack) did not pass the check. There is no keystone jack visible in this photo — it shows a wall hole with cables, a router/mesh device, and a hand holding a cable, but no clear plastic keystone jack with a T568A or T568B wiring diagram. Fix that, send a new photo, and we will move on.
+current: 0
+
+--- MATCHING photo (05-office-jack-open) ---
+submit_photo: Not yet. The jack is visible but the wiring diagram on its side is not readable — no T568A or T568B label can be seen at this distance and angle. The photo needs to show: A close-up photo of the wiring diagram on the jack showing whether it reads T568A or T568B.
+advance: error | cancelled: True 
+   Blocked: step 1 (Identify the wiring diagram on the jack) did not pass the check. The jack is visible but the wiring diagram on its side is not readable — no T568A or T568B label can be seen at this distance and angle. Fix that, send a new photo, and we will move on.
+current: 0 -> Step 1 of 9: Identify the wiring diagram on the jack — Look at the side of the keystone jack (the clear plastic snap-in socket) for a small colour-coded diagram — it will say either 'T568A' or 'T568B'. Note which standard is printed there, because every wire must follow that diagram exactly.
+JOB_ID=job-20260909-103122-5d31

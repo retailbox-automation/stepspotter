@@ -1,0 +1,21 @@
+job_id: job-20260909-103247-8b90 (plan hand-written, verdicts live)
+
+--- card for step 1 ---
+card: /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-103247-8b90/step-01.jpg
+   [act] keystone jack (0.28,0.72)-(0.58,1.00)
+   [act] terminated wire pairs (0.27,0.60)-(0.57,0.80)
+   [avoid] the black coax cable (0.42,0.30)-(0.65,0.72)
+   [avoid] the other cables in the box (0.42,0.18)-(0.78,0.55)
+
+--- WRONG photo (04-office-jack-front: closed faceplate) ---
+submit_photo: Not yet. The photo shows only the RJ-45 port face of the keystone module — the rear punch-down side where wire pairs are terminated is not visible, and no coloured wires can be seen. The photo needs to show: the wall jack open with the faceplate off and the coloured wire pairs terminated into the keystone module
+advance: error | cancelled: True 
+   Blocked: step 1 (Open the jack and seat the pairs) did not pass the check. The photo shows only the RJ-45 port face of the keystone module — the rear punch-down side where wire pairs are terminated is not visible, and no coloured wires can be seen. Fix that, send a new photo, and we will move on.
+current: 0 (expected 0)
+
+--- MATCHING photo (05-office-jack-open) ---
+submit_photo: That looks done. The faceplate is off the wall box and the keystone jack is clearly visible with the coloured wire pairs (blue, orange, green) seated into the module's IDC slots.
+advance: success | cancelled: False 
+   Step 2 of 2: Test the link — Plug the cable tester into both ends and read the lights.
+current: 1 -> Step 2 of 2: Test the link — Plug the cable tester into both ends and read the lights.
+JOB_ID=job-20260909-103247-8b90

@@ -1,0 +1,81 @@
+=== 1. PLAN ===
+job_id: job-20260909-102907-6057
+safety_class: diy_ok
+job: Terminate Cat5e cables to keystone jacks
+tools: ['Punch-down tool (a small handle with a blade that pushes wire into a terminal slot and trims the excess — a cheap one costs about $10)', '110-type keystone jack x2 (the small snap-in sockets the cable plugs into — buy Cat5e or Cat6, T568B wiring standard)', 'Small flat-head screwdriver', 'Wire stripper or a sharp knife', 'Patch cord (a short pre-made network cable with RJ45 plugs on each end — 1 ft is fine)', 'Cable tester (a two-piece device that lights LEDs 1–8 to confirm all wires are connected — under $20)']
+  1. Photograph existing punch-down wiring
+     action: Before touching anything, take a close-up photo of the existing wire colors seated in the old phone block terminals so you have a reference if you need to undo anything.
+     do_not_touch: ['coaxial (TV cable) connectors and splitter', 'yellow-green ground wire at the bottom', 'any black cables not identified as Cat5e']
+     stop_if: If any wire or terminal feels warm or looks scorched or melted, stop and contact a professional.
+     evidence: A clear photo showing all wire colors in the punch-down block is saved on your device before you proceed.
+  2. Unplug or release the first blue Cat5e cable
+     action: Find the first blue Cat5e cable entering the phone block and gently pull it free from its punch-down slots using the flat-head screwdriver to lever each wire up — do not yank the outer jacket.
+     do_not_touch: ['coaxial splitter', 'second blue Cat5e cable (leave it in place until its turn)', 'black cables']
+     stop_if: None
+     evidence: Photo shows the first blue Cat5e cable hanging free with no wires still seated in the old block terminals.
+  3. Strip the jacket from the first cable
+     action: Using the wire stripper or knife, carefully score and remove about 1 inch (25 mm) of the blue outer plastic jacket (called the jacket) from the end of the cable, exposing the four twisted wire pairs inside. Do not nick the individual wire insulation.
+     do_not_touch: ['the four twisted pairs themselves — only hold the jacket']
+     stop_if: None
+     evidence: Photo shows roughly 1 inch of jacket removed and four twisted pairs visible with no cuts or nicks in the individual wire insulation.
+  4. Seat wires into first keystone jack using T568B order
+     action: Hold the keystone jack (the small snap-in socket) with the T568B color diagram facing you — the color slots are printed on the jack body. Untwist each pair just enough to seat them one by one into the matching color-coded slots: white/orange, orange, white/green, blue, white/blue, green, white/brown, brown.
+     do_not_touch: ['second blue Cat5e cable', 'coaxial splitter', 'ground wire']
+     stop_if: None
+     evidence: Photo shows all 8 wires seated in the correct color-coded slots of the jack with none crossed over or missing.
+  5. Punch down and trim first keystone jack
+     action: Press the punch-down tool (blade facing OUTWARD, away from the jack center) firmly onto each wire one at a time — you will hear a click and the tool will trim the excess wire end automatically.
+     do_not_touch: ['second blue Cat5e cable', 'coaxial components']
+     stop_if: None
+     evidence: Photo shows all 8 wire ends trimmed flush with the jack — no bare wire sticking up above any slot.
+  6. Repeat steps 2–5 for the second blue Cat5e cable
+     action: Remove the second blue Cat5e cable from the phone block, strip 1 inch of jacket, seat wires into the second keystone jack in T568B order, and punch them down exactly as you did for the first cable.
+     do_not_touch: ['first completed keystone jack', 'coaxial splitter', 'ground wire', 'black cables']
+     stop_if: None
+     evidence: Photo shows both keystone jacks completed, all wires punched and trimmed, jacks side by side.
+  7. Snap jacks into a surface-mount box or coupler
+     action: Press each keystone jack firmly into a dual surface-mount box (a small plastic housing designed to hold snap-in jacks) or a keystone coupler (a short barrel that joins two jacks face-to-face) until you hear it click — this holds the jacks securely so the patch cord can't wiggle the wires loose.
+     do_not_touch: ['coaxial components', 'ground wire']
+     stop_if: None
+     evidence: Photo shows both jacks snapped firmly into the housing or coupler with no gap between jack body and housing edge.
+  8. Connect the patch cord between the two jacks
+     action: Plug one end of the short patch cord (the pre-made cable with RJ45 plastic plugs on each end) into Jack 1 and the other end into Jack 2 — push each plug in until you hear a click.
+     do_not_touch: ['coaxial connections', 'ground wire']
+     stop_if: None
+     evidence: Photo shows both RJ45 plugs fully seated in their jacks with the locking tab visible and not raised.
+  9. Test the link with a cable tester
+     action: Unplug the patch cord, plug the cable tester's MAIN unit into Jack 1 and the REMOTE unit into Jack 2, then power the tester on and watch the LEDs numbered 1 through 8 — all 8 LEDs must light in sequence on both units.
+     do_not_touch: ['coaxial splitter', 'ground wire', 'black cables']
+     stop_if: If any LED does not light, or if LEDs light in the wrong order (e.g., 1 on main lights against 3 on remote), a wire is mis-seated — unplug the tester, re-open the affected jack, re-seat the wires in the correct color slots, re-punch, and retest.
+     evidence: Photo shows all 8 LEDs lit on both the MAIN and REMOTE units of the cable tester simultaneously.
+
+=== 2. SHOW STEP 1 (card) ===
+card: /Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-102907-6057/step-01.jpg
+   [act] blue Cat5e cables entering the phone/punch-down block (0.08,0.00)-(0.75,0.55)
+   [act] individual wire colors in the terminal slots (0.18,0.38)-(0.72,0.52)
+   [avoid] coaxial (TV cable) connectors and splitter (0.22,0.22)-(0.72,0.42)
+   [avoid] any black cables not identified as Cat5e (0.55,0.28)-(1.00,0.95)
+   [avoid] yellow-green ground wire at the bottom (0.10,0.88)-(0.55,0.98)
+
+=== 3. SUBMIT A NON-MATCHING PHOTO (05-office-jack-open) ===
+submit_photo -> Not yet. The punch-down block has already been pulled out of the wall and work appears to have started, so this is not a "before touching anything" reference shot, and the wire colors seated in the terminals are not clearly visible at this angle. The photo needs to show: A clear photo showing all wire colors in the punch-down block is saved on your device before you proceed.
+
+=== 4. ADVANCE (must be cancelled) ===
+status: error | cancelled: True
+reason: Blocked: step 1 (Photograph existing punch-down wiring) did not pass the check. The punch-down block has already been pulled out of the wall and work appears to have started, so this is not a "before touching anything" reference shot, and the wire colors seated in the terminals are not clearly visible at this angle. Fix that, send a new photo, and we will move on.
+state.current: 0 (expected 0)
+
+=== 5. SUBMIT EACH REMAINING PHOTO AGAINST STEP 1 ===
+  01-panel-overview: passed=False stop=False :: The photo is taken too far away and at an angle — the punch-down block terminals and individual wire colors are not clearly visible or distinguishable as a reference.
+  02-panel-inside: passed=False stop=False :: The photo shows a coax splitter and cable enclosure — any punch-down block is too dark and obscured to make out individual wire colors in the terminals.
+  03-telecom-module: passed=False stop=False :: The punch-down block is visible but the photo is taken at an angle and from too far away, with cables obscuring parts of the block, so the individual wire colors in each terminal slot are not clearly distinguishable as a reliable reference.
+  04-office-jack-front: passed=False stop=False :: The photo shows an empty RJ45 keystone jack (front-facing port) with no wires seated in any punch-down terminals — there are no wire colors visible at all.
+  06-dining-node-white-cable: passed=False stop=False :: There is no punch-down block visible in this photo — it shows loose wires coming out of a wall hole and what appears to be a router/network device, not a phone block terminal with wires seated in it.
+
+=== 6. ADVANCE AFTER THE LAST VERDICT ===
+status: error | cancelled: True
+result: Blocked: step 1 (Photograph existing punch-down wiring) did not pass the check. There is no punch-down block visible in this photo — it shows loose wires coming out of a wall hole and what appears to be a router/network device, not a phone block terminal with wires seated in it. Fix that, send a new photo, and we will move on.
+state.current: 0
+
+first photo that satisfied step 1: None
+JOB_ID=job-20260909-102907-6057

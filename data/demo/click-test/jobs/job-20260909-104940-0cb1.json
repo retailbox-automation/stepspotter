@@ -1,0 +1,194 @@
+{
+  "job_id": "job-20260909-104940-0cb1",
+  "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/click-test/jobs/job-20260909-104940-0cb1/start.jpg",
+  "plan": {
+    "job_title": "Terminate two Cat5e cables to keystone jacks",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": [
+      "Punch-down tool (a small hand tool that pushes wire into a terminal slot and trims the excess — ~$10 at any hardware store)",
+      "110-type keystone jack x2 (the small snap-in data socket the patch cord plugs into — must say 'Cat5e' or 'Cat6' on the pack)",
+      "Small flat-head screwdriver",
+      "Wire stripper or sharp scissors",
+      "Cat5e patch cord, any length (a short pre-made cable with RJ45 plugs on both ends)",
+      "Cable tester (a two-piece device, ~$15, that checks all 8 wires lit up in sequence)"
+    ],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Photograph the existing punch-down wiring",
+        "action": "Before touching anything, take a clear close-up photo of each blue cable where it is currently punched down into the phone block (the black panel with the colored wire terminals). This is your reference if you need to undo anything.",
+        "do_not_touch": [
+          "coax F-connectors and splitter",
+          "black coax cables",
+          "green/yellow ground wire",
+          "any other cables already terminated in the block"
+        ],
+        "stop_condition": "If any terminal looks scorched, melted, or smells burnt, stop and contact a professional.",
+        "evidence_required": "Photo shows both blue cables' wire colors clearly visible in their current terminal slots.",
+        "highlight_targets": [
+          "blue Cat5e cable 1 punch-down terminals",
+          "blue Cat5e cable 2 punch-down terminals"
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Un-punch the first blue cable from the block",
+        "action": "Use the small flat-head screwdriver to gently lever each wire out of its slot on the phone block for the FIRST blue cable only. Work one wire at a time so they don't tangle.",
+        "do_not_touch": [
+          "second blue Cat5e cable",
+          "coax cables",
+          "ground wire",
+          "all other punch-down ports"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows the first blue cable hanging free with all its inner wires visible and unattached to the block.",
+        "highlight_targets": [
+          "first blue Cat5e cable",
+          "phone block terminal slots for that cable"
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Trim and strip the first cable end",
+        "action": "Cut the cable end back about 2 inches (5 cm) to get a fresh, undamaged section of wire. Then use the wire stripper to remove the outer jacket (the blue plastic sleeve) for about 1 inch (2.5 cm), exposing the 4 twisted pairs (8 thin wires) inside.",
+        "do_not_touch": [
+          "second blue Cat5e cable",
+          "all hardware in the enclosure"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows ~1 inch of jacket removed revealing the 4 twisted pairs, with no nicks or cuts on any thin wire.",
+        "highlight_targets": [
+          "first blue Cat5e cable end"
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Seat wires into first keystone jack using T568B order",
+        "action": "Hold a keystone jack (the small snap-in socket) with its color-coded wire guide facing you. Place each thin wire into its matching colored slot following the T568B pattern printed on the jack — this is the standard order: white-orange, orange, white-green, blue, white-blue, green, white-brown, brown. Do NOT untwist the pairs more than 0.5 inch (1.3 cm) each.",
+        "do_not_touch": [
+          "second blue Cat5e cable",
+          "coax hardware"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows all 8 wires seated in the jack slots with correct colors visible and no wire crossing out of its slot.",
+        "highlight_targets": [
+          "keystone jack wire-guide slots",
+          "8 thin inner wires of first cable"
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Punch down the first keystone jack",
+        "action": "Press each wire firmly into its slot using the punch-down tool (position the tool blade over the wire in the slot and push straight down until you hear/feel a click). The tool will trim the excess wire automatically.",
+        "do_not_touch": [
+          "second blue Cat5e cable",
+          "coax hardware",
+          "ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows all 8 wires punched flush into the jack slots with no loose wire ends sticking up.",
+        "highlight_targets": [
+          "punch-down tool blade",
+          "keystone jack slots"
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Repeat steps 2–5 for the second blue cable",
+        "action": "Un-punch the second blue cable from the phone block, trim and strip its end exactly as in steps 2–3, seat the wires into the second keystone jack using the same T568B color order, and punch them down.",
+        "do_not_touch": [
+          "first finished keystone jack",
+          "coax cables",
+          "ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows both keystone jacks fully punched down with no loose wire ends on either jack.",
+        "highlight_targets": [
+          "second blue Cat5e cable",
+          "second keystone jack"
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Mount both keystone jacks in a surface",
+        "action": "Snap each finished keystone jack into a keystone wall-plate or patch-panel faceplate (a plastic frame that holds the jack steady) by pressing it in until it clicks. Both jacks should sit side by side.",
+        "do_not_touch": [
+          "coax hardware",
+          "all other cables in the enclosure"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows both jacks snapped flush into the faceplate with no gaps or tilting.",
+        "highlight_targets": [
+          "keystone jack snap-in notches",
+          "faceplate opening"
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Connect the two jacks with a patch cord",
+        "action": "Plug one end of the patch cord (the short pre-made cable with RJ45 rectangular plugs on both ends) into jack 1, and the other end into jack 2. Press each plug in until you hear a click.",
+        "do_not_touch": [
+          "coax cables",
+          "ground wire"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo shows the patch cord plugged into both jacks with both locking tabs visible and engaged.",
+        "highlight_targets": [
+          "jack 1 port",
+          "jack 2 port",
+          "patch cord RJ45 plug"
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Test the link with a cable tester",
+        "action": "Plug the main unit of the cable tester into one jack and the remote unit into the other jack (or directly onto each end of the loop). Switch it on and watch the indicator lights — all 8 lights (numbered 1–8) must flash in sequence with no skipped or lit-solid lights, which would mean a wiring fault.",
+        "do_not_touch": [
+          "coax hardware",
+          "ground wire"
+        ],
+        "stop_condition": "If any light is missing, stays on permanently, or the tester shows 'FAIL', do not use the link — recheck the wire color order in both jacks against the T568B label and re-punch if needed.",
+        "evidence_required": "Photo or video shows all 8 numbered lights on the tester cycling 1 through 8 in order with no gaps or errors.",
+        "highlight_targets": [
+          "cable tester main unit",
+          "cable tester remote unit",
+          "indicator lights 1–8"
+        ]
+      }
+    ]
+  },
+  "current": 0,
+  "verdicts": {
+    "0": {
+      "step_id": 1,
+      "passed": false,
+      "reason": "The photo does not show the blue cables punched down into a black phone block with wire colors clearly visible in their terminal slots — the wiring appears loose/pulled out and no close-up of the punch-down block terminals is visible.",
+      "stop": false,
+      "evidence_boxes": [
+        {
+          "label": "blue cables",
+          "x0": 0.55,
+          "y0": 0.25,
+          "x1": 0.85,
+          "y1": 0.75,
+          "kind": "act"
+        },
+        {
+          "label": "loose wiring / connector",
+          "x0": 0.25,
+          "y0": 0.6,
+          "x1": 0.65,
+          "y1": 0.95,
+          "kind": "act"
+        }
+      ]
+    }
+  },
+  "card_paths": {
+    "0": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/click-test/jobs/job-20260909-104940-0cb1/step-01.jpg"
+  },
+  "created_at": "2026-09-09T14:50:13+00:00",
+  "updated_at": "2026-09-09T14:50:28+00:00"
+}

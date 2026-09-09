@@ -1,0 +1,80 @@
+{
+  "job_id": "job-20260909-103247-8b90",
+  "task": "terminate the office jack",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg",
+  "plan": {
+    "job_title": "Terminate the office jack",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": [
+      "punch-down tool",
+      "cable tester"
+    ],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Open the jack and seat the pairs",
+        "action": "Take the faceplate off the office box and push each coloured wire pair into the matching slot on the keystone jack (the snap-in socket the cable plugs into).",
+        "do_not_touch": [
+          "the black coax cable",
+          "the other cables in the box"
+        ],
+        "stop_condition": "if any wire is warm, scorched or smells burnt, stop and contact a human",
+        "evidence_required": "the wall jack open with the faceplate off and the coloured wire pairs terminated into the keystone module",
+        "highlight_targets": [
+          "keystone jack",
+          "terminated wire pairs"
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Test the link",
+        "action": "Plug the cable tester into both ends and read the lights.",
+        "do_not_touch": [],
+        "stop_condition": null,
+        "evidence_required": "the tester showing all eight lights in order",
+        "highlight_targets": []
+      }
+    ]
+  },
+  "current": 1,
+  "verdicts": {
+    "0": {
+      "step_id": 1,
+      "passed": true,
+      "reason": "The faceplate is off the wall box and the keystone jack is clearly visible with the coloured wire pairs (blue, orange, green) seated into the module's IDC slots.",
+      "stop": false,
+      "evidence_boxes": [
+        {
+          "label": "open wall box (faceplate removed)",
+          "x0": 0.35,
+          "y0": 0.1,
+          "x1": 0.95,
+          "y1": 0.65,
+          "kind": "act"
+        },
+        {
+          "label": "keystone jack with wire pairs terminated",
+          "x0": 0.3,
+          "y0": 0.6,
+          "x1": 0.75,
+          "y1": 0.95,
+          "kind": "act"
+        },
+        {
+          "label": "faceplate removed / set aside",
+          "x0": 0.1,
+          "y0": 0.8,
+          "x1": 0.85,
+          "y1": 1.0,
+          "kind": "act"
+        }
+      ]
+    }
+  },
+  "card_paths": {
+    "0": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-103247-8b90/step-01.jpg"
+  },
+  "created_at": "2026-09-09T14:32:47+00:00",
+  "updated_at": "2026-09-09T14:33:02+00:00"
+}

@@ -1,0 +1,212 @@
+{
+  "job_id": "job-20260909-104242-eadf",
+  "task": "Connect the two blue Cat5e cables from the old phone block to new keystone jacks, join them with a patch cord, then test the link",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/web-smoke/jobs/job-20260909-104242-eadf/start.jpg",
+  "plan": {
+    "job_title": "Terminate two Cat5e cables to keystones",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": [
+      "Punch-down tool (a small handle with a blade tip that presses wire into a keystone jack slot and trims the excess)",
+      "110-blade keystone jacks, qty 2 (the small snap-in sockets the patch cord will plug into)",
+      "Cable stripper or sharp scissors",
+      "Short patch cord (a pre-made network cable with RJ-45 plugs on both ends)",
+      "Cable tester (a two-piece device that sends a signal through all 8 wires and lights up to show pass/fail)",
+      "Permanent marker",
+      "Keystone coupler or surface-mount box to hold the two finished jacks (optional but strongly recommended)"
+    ],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Photograph the existing punch-down wiring",
+        "action": "Before touching anything, take a clear close-up photo of every wire already seated in the old phone block (the tan or white plastic block with colored wires pressed into numbered slots). This is your undo map if anything goes wrong.",
+        "do_not_touch": [
+          "coax splitter and coax cables",
+          "black thick power or alarm cables",
+          "any RJ-45 patch ports already in use on the panel"
+        ],
+        "stop_condition": "If any wire or terminal looks scorched, melted, or smells burnt, stop and contact a licensed electrician.",
+        "evidence_required": "A photo showing all wire colors and their slot positions on the old punch-down block, sharp enough to read the color labels.",
+        "highlight_targets": [
+          "existing punch-down block",
+          "colored wires in slots",
+          "two blue Cat5e cables entering the block"
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Label and free the first blue cable",
+        "action": "Use a marker to write '1' on a piece of tape and wrap it around the first blue Cat5e cable so you can tell them apart. Then gently unpress or unscrew whichever wires from that cable are already seated in the old block — do not cut the cable itself.",
+        "do_not_touch": [
+          "second blue Cat5e cable",
+          "coax cables",
+          "alarm or power wires"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing cable '1' tape label and all of its wires pulled free from the old block, cable jacket still intact.",
+        "highlight_targets": [
+          "first blue Cat5e cable",
+          "its wires in the punch-down block"
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Label and free the second blue cable",
+        "action": "Wrap a tape label reading '2' on the second blue Cat5e cable. Free its wires from the old block the same way you did for cable 1.",
+        "do_not_touch": [
+          "cable 1",
+          "coax cables",
+          "alarm or power wires"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing both cables labelled '1' and '2' with all their wires free and hanging loose.",
+        "highlight_targets": [
+          "second blue Cat5e cable",
+          "its wires in the punch-down block"
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Strip jacket on cable 1",
+        "action": "Use the cable stripper (or carefully score with scissors) to remove about 25 mm (1 inch) of the blue outer jacket from the end of cable 1, exposing the four twisted pairs (groups of two wires twisted around each other) inside. Do not nick the inner wires.",
+        "do_not_touch": [
+          "cable 2",
+          "all other panel wiring"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing the stripped end of cable 1 with four twisted pairs exposed and no cuts or nicks on the insulation of any inner wire.",
+        "highlight_targets": [
+          "cable 1 jacket",
+          "cut point 25 mm from end"
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Punch cable 1 into first keystone jack",
+        "action": "Hold the keystone jack (the small snap-in socket) with the color-guide label facing you — it will show T568B wiring order (the industry-standard sequence printed on the jack body). Lay each wire into its matching colored slot, then press each wire firmly into its slot using the punch-down tool until you hear a click and the tool trims the excess wire tip.",
+        "do_not_touch": [
+          "cable 2",
+          "coax splitter",
+          "existing RJ-45 ports in use"
+        ],
+        "stop_condition": "If the punch-down tool blade slips and you nick your hand, stop and treat the cut before continuing.",
+        "evidence_required": "Close-up photo of the finished keystone jack for cable 1 showing all eight wires seated flush in their slots and trimmed flush with the jack body.",
+        "highlight_targets": [
+          "T568B color guide on keystone jack",
+          "eight wire slots",
+          "punch-down tool blade"
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Strip jacket on cable 2",
+        "action": "Repeat the stripping step for cable 2: remove about 25 mm (1 inch) of the outer blue jacket, exposing the four twisted pairs without nicking any inner wire.",
+        "do_not_touch": [
+          "finished keystone jack from cable 1",
+          "coax cables",
+          "alarm wires"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing the stripped end of cable 2 with four twisted pairs exposed and no nicks on inner wire insulation.",
+        "highlight_targets": [
+          "cable 2 jacket",
+          "cut point 25 mm from end"
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Punch cable 2 into second keystone jack",
+        "action": "Using the same T568B color-guide sequence, lay each wire of cable 2 into its slot on the second keystone jack and press each wire in with the punch-down tool until it clicks and trims.",
+        "do_not_touch": [
+          "finished keystone jack from cable 1",
+          "coax and alarm wiring"
+        ],
+        "stop_condition": "If the punch-down tool blade slips and you nick your hand, stop and treat the cut before continuing.",
+        "evidence_required": "Close-up photo of the second finished keystone jack showing all eight wires seated and trimmed flush.",
+        "highlight_targets": [
+          "T568B color guide on second keystone jack",
+          "eight wire slots"
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Seat both jacks in coupler or surface-mount box",
+        "action": "Snap both finished keystone jacks into your coupler (a small plastic frame that holds two jacks back-to-back) or into a surface-mount box so they are held firmly and the ports face outward.",
+        "do_not_touch": [
+          "coax splitter",
+          "alarm and power wires"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing both jacks snapped securely into the coupler or box with the RJ-45 port openings clearly visible and facing outward.",
+        "highlight_targets": [
+          "two finished keystone jacks",
+          "coupler or surface-mount box mounting slots"
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Connect the two jacks with a patch cord",
+        "action": "Plug one end of the patch cord (the short pre-made network cable with RJ-45 plugs — the clear plastic tabs — on both ends) into jack 1, and the other end into jack 2. You should hear a click as each plug latches.",
+        "do_not_touch": [
+          "coax cables and splitter",
+          "alarm wires"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing the patch cord plugged into both keystone jacks with both plugs visibly seated and clicked in.",
+        "highlight_targets": [
+          "jack 1 port",
+          "jack 2 port",
+          "patch cord RJ-45 plugs"
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Test the link with cable tester",
+        "action": "Unplug the patch cord, attach the two pieces of the cable tester — one unit to each jack (one keystone at a time, following the tester's instructions) — and run the test. A passing result means all eight indicator lights on the tester light in sequence with no skips or crossed pairs.",
+        "do_not_touch": [
+          "coax splitter",
+          "alarm wiring"
+        ],
+        "stop_condition": "If the tester shows a crossed pair or any light fails to illuminate, do not use the cable — re-open the affected jack and check that each wire is in the correct color-coded slot before testing again.",
+        "evidence_required": "Photo of the cable tester display showing all eight lights illuminated in order with no failures, confirming a good end-to-end link.",
+        "highlight_targets": [
+          "cable tester unit 1",
+          "cable tester unit 2",
+          "indicator lights on tester"
+        ]
+      }
+    ]
+  },
+  "current": 0,
+  "verdicts": {
+    "0": {
+      "step_id": 1,
+      "passed": false,
+      "reason": "The punch-down block is visible but partially obscured by overlying cables, shot at an oblique angle, and too far away to clearly read wire colors or slot numbers — it is not sharp or close enough to serve as a reliable undo map.",
+      "stop": false,
+      "evidence_boxes": [
+        {
+          "label": "punch-down block (partially obscured)",
+          "x0": 0.2,
+          "y0": 0.38,
+          "x1": 0.75,
+          "y1": 0.58,
+          "kind": "act"
+        },
+        {
+          "label": "blocking cable",
+          "x0": 0.15,
+          "y0": 0.42,
+          "x1": 0.55,
+          "y1": 0.62,
+          "kind": "stop"
+        }
+      ]
+    }
+  },
+  "card_paths": {
+    "0": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/web-smoke/jobs/job-20260909-104242-eadf/step-01.jpg"
+  },
+  "created_at": "2026-09-09T14:43:20+00:00",
+  "updated_at": "2026-09-09T14:43:47+00:00"
+}

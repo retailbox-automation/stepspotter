@@ -1,0 +1,173 @@
+{
+  "job_id": "job-20260909-103122-5d31",
+  "task": "Terminate the blue Cat5e cable into the keystone jack in this office wall box, then close the box and test the link with a cable tester",
+  "start_photo": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/docs/design-reference-2026-09-09/raw-photos-onq/05-office-jack-open.jpg",
+  "plan": {
+    "job_title": "Terminate Cat5e into keystone jack",
+    "safety_class": "diy_ok",
+    "vendor_reason": null,
+    "tools_needed": [
+      "110-punch down tool (a small hand tool that pushes wire into the keystone jack's slots and trims the excess in one press — a flat-head screwdriver can be used as a last resort but a punch tool is strongly preferred)",
+      "Wire stripper or scissors",
+      "Cable tester (a two-part device: one end plugs into the jack, the other into the far end of the cable, and lights confirm every wire connected correctly)",
+      "Small Phillips-head screwdriver (for the faceplate screw)"
+    ],
+    "steps": [
+      {
+        "id": 1,
+        "title": "Identify the wiring diagram on the jack",
+        "action": "Look at the side of the keystone jack (the clear plastic snap-in socket) for a small colour-coded diagram — it will say either 'T568A' or 'T568B'. Note which standard is printed there, because every wire must follow that diagram exactly.",
+        "do_not_touch": [
+          "the blue Cat5e cable inside the wall box",
+          "any other cables visible inside the wall box"
+        ],
+        "stop_condition": null,
+        "evidence_required": "A close-up photo of the wiring diagram on the jack showing whether it reads T568A or T568B.",
+        "highlight_targets": [
+          "colour diagram label on the side of the keystone jack",
+          "T568A or T568B label"
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Strip the blue cable's outer jacket",
+        "action": "Starting from the tip of the blue Cat5e cable, use a wire stripper or scissors to carefully score and remove about 35 mm (roughly 1.5 inches) of the smooth blue outer jacket (the thick plastic sleeve covering all the inner wires), exposing the four twisted pairs inside. Do not nick the small inner wires.",
+        "do_not_touch": [
+          "the wall box",
+          "any other cables inside the box"
+        ],
+        "stop_condition": "If any inner wire is cut through or heavily nicked, stop — a nicked wire will fail the test; trim back and re-strip.",
+        "evidence_required": "Photo showing the blue jacket removed and four colour-coded twisted pairs visible, with no nicks on any inner wire.",
+        "highlight_targets": [
+          "blue Cat5e outer jacket",
+          "point 35 mm from the tip to strip to"
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Untwist and straighten each pair",
+        "action": "Gently untwist each of the four pairs (orange/white-orange, green/white-green, blue/white-blue, brown/white-brown) just enough to lay each wire into its matching slot on the jack — keep the untwisted length as short as possible (under 13 mm / 0.5 inches) to maintain signal quality.",
+        "do_not_touch": [
+          "the wall box mounting screw",
+          "any other cables"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing all eight individual wires straightened and lined up against the jack's colour-coded slots, not yet pressed in.",
+        "highlight_targets": [
+          "four twisted pairs on the cable end",
+          "colour-coded slots on the keystone jack"
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Seat each wire into its correct jack slot",
+        "action": "Following the colour diagram you identified in Step 1 (T568A or T568B), lay each wire down into its matching labelled slot (the small grooves along the top of the jack) so the wire sits in the groove but is not yet punched down.",
+        "do_not_touch": [
+          "the yellow cap/cover on the jack — leave it in place until all wires are seated"
+        ],
+        "stop_condition": "If any wire will not reach its slot without straining, go back to Step 2 and strip a few more millimetres of jacket.",
+        "evidence_required": "Photo showing all eight wires lying in their correct colour-labelled slots, visible from above.",
+        "highlight_targets": [
+          "each individual wire",
+          "each matching colour-coded slot on the jack"
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Punch down all wires with the punch tool",
+        "action": "Press the punch-down tool (the small hand tool) firmly straight down onto each wire in its slot, one wire at a time — the tool will push the wire fully into the metal contact inside the slot and automatically trim the excess wire end that sticks out.",
+        "do_not_touch": [
+          "already-punched adjacent wires",
+          "the yellow cap on the jack"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing all eight wire ends trimmed flush, with no excess wire sticking up above the jack body.",
+        "highlight_targets": [
+          "punch-down tool tip",
+          "each slot to be punched"
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Snap the cap onto the jack",
+        "action": "Press the yellow cap (the small hinged or separate cover on the front of the jack) firmly closed over the punched-down wires until you feel or hear it click into place.",
+        "do_not_touch": [
+          "the punched-down wires beneath the cap"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing the yellow cap fully closed and flat against the top of the jack.",
+        "highlight_targets": [
+          "yellow cap on the keystone jack"
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Snap the jack into the faceplate",
+        "action": "Push the keystone jack into the rectangular hole in the faceplate (the white wall-plate frame) until it clicks firmly and sits flush with the front face of the plate.",
+        "do_not_touch": [
+          "the wall box mounting tabs"
+        ],
+        "stop_condition": null,
+        "evidence_required": "Photo showing the jack sitting flush and level in the faceplate with no gaps around its edges.",
+        "highlight_targets": [
+          "rectangular port hole in the faceplate",
+          "keystone jack body"
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Fold cable and mount faceplate to box",
+        "action": "Gently fold the excess cable back into the wall box, then align the faceplate over the box and tighten the centre screw with a Phillips-head screwdriver until the plate sits flat against the wall — do not overtighten.",
+        "do_not_touch": [
+          "the surrounding drywall — it looks fragile around this box"
+        ],
+        "stop_condition": "If the faceplate cracks when you tighten the screw, stop tightening — finger-tight is enough.",
+        "evidence_required": "Photo showing the faceplate sitting flat against the wall with the screw tightened and no cable pinched at the edges.",
+        "highlight_targets": [
+          "wall box",
+          "faceplate centre screw hole",
+          "excess cable to fold into box"
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Test the link with a cable tester",
+        "action": "Plug one end of the cable tester into the new keystone jack at the wall, and plug the other part of the tester into the far end of the same blue cable (at the patch panel or other wall jack). Power on the tester and watch the indicator lights — all eight lights (numbered 1–8) must light up in sequence with no missing or crossed numbers.",
+        "do_not_touch": [
+          "any other jacks or ports nearby"
+        ],
+        "stop_condition": "If any light is missing, lit in the wrong order, or the tester shows a 'FAIL' indication, stop — unscrew the faceplate and re-punch the wire for the failing pin number.",
+        "evidence_required": "Photo of the cable tester display showing all 8 lights passing (lit in order 1 through 8, with no lights missing or out of sequence).",
+        "highlight_targets": [
+          "keystone jack port",
+          "cable tester remote unit",
+          "cable tester indicator lights"
+        ]
+      }
+    ]
+  },
+  "current": 0,
+  "verdicts": {
+    "0": {
+      "step_id": 1,
+      "passed": false,
+      "reason": "The jack is visible but the wiring diagram on its side is not readable — no T568A or T568B label can be seen at this distance and angle.",
+      "stop": false,
+      "evidence_boxes": [
+        {
+          "label": "keystone jack",
+          "x0": 0.25,
+          "y0": 0.72,
+          "x1": 0.6,
+          "y1": 1.0,
+          "kind": "act"
+        }
+      ]
+    }
+  },
+  "card_paths": {
+    "0": "/Users/oskolamicheal/Projects/Retailbox - Agents for Humans Hackathon/stepspotter/data/demo/onq-keystone/jobs/job-20260909-103122-5d31/step-01.jpg"
+  },
+  "created_at": "2026-09-09T14:31:56+00:00",
+  "updated_at": "2026-09-09T14:32:10+00:00"
+}

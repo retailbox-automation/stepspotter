@@ -1,0 +1,7 @@
+INFO:     Started server process [18116]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8137 (Press CTRL+C to quit)
+StepSpotter on http://0.0.0.0:8137  (open it on your phone)
+INFO:     127.0.0.1:54732 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     192.168.1.73:54733 - "GET /healthz HTTP/1.1" 200 OK

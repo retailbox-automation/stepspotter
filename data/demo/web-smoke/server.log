@@ -1,0 +1,19 @@
+INFO:     Started server process [77333]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8137 (Press CTRL+C to quit)
+StepSpotter on http://127.0.0.1:8137  (open it on your phone)
+INFO:     127.0.0.1:52320 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52332 - "GET /?job=job-20260909-104242-eadf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52332 - "GET /api/jobs/job-20260909-104242-eadf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52332 - "GET /api/jobs/job-20260909-104242-eadf/card?step=1&t=1788965075753 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52333 - "GET /api/jobs/job-20260909-104242-eadf/evidence/1?t=1788965075753 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52835 - "GET /?job=job-20260909-104242-eadf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52836 - "POST /api/jobs/job-20260909-104242-eadf/escalate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52837 - "GET /api/jobs/job-20260909-104242-eadf/trace HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [77333]
+e.
+INFO:     Finished server process [72820]

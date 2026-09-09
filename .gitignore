@@ -11,6 +11,6 @@ credentials*.json
 spikes/out/
 
 # runtime job state; the committed demo under data/demo/ is the exception
-data/
+data/*
 !data/demo/
 !data/demo/**

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StepSpotter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232fbf71'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='%23fff' font-family='sans-serif'%3E1%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#12141a; --card:#1b1e26; --line:#2c3140; --ink:#f2f4f8; --dim:#a3adc2;
+    --act:#2fbf71; --avoid:#e5484d; --stop:#f0932b; --accent:#4f8cff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+       -webkit-text-size-adjust:100%}
+  header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+         padding:12px 16px calc(12px);display:flex;align-items:center;gap:10px}
+  header b{font-size:17px;letter-spacing:.2px}
+  header small{color:var(--dim);margin-left:auto;font-size:13px}
+  main{padding:16px;max-width:720px;margin:0 auto;padding-bottom:48px}
+  h1{font-size:20px;margin:0 0 4px}
+  p.sub{color:var(--dim);margin:0 0 18px}
+  label{display:block;font-weight:600;margin:14px 0 6px}
+  textarea,input[type=text]{width:100%;background:var(--card);color:var(--ink);
+       border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit}
+  textarea{min-height:92px;resize:vertical}
+  .filebtn{display:block;width:100%;text-align:center;background:var(--card);
+       border:1px dashed var(--line);border-radius:12px;padding:18px;color:var(--dim)}
+  .filebtn.has{border-style:solid;color:var(--ink)}
+  button{font:inherit;font-weight:650;border:0;border-radius:12px;padding:15px 16px;width:100%;
+         background:var(--accent);color:#fff;margin-top:12px}
+  button.ghost{background:transparent;color:var(--dim);border:1px solid var(--line)}
+  button.stop{background:transparent;color:var(--stop);border:1px solid var(--stop)}
+  button:disabled{opacity:.5}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+  .card img{width:100%;border-radius:10px;display:block}
+  .stepno{color:var(--dim);font-size:13px;text-transform:uppercase;letter-spacing:.8px}
+  .title{font-size:19px;font-weight:700;margin:2px 0 8px}
+  .action{font-size:17px}
+  .tag{display:block;border-left:3px solid;padding:8px 10px;margin-top:10px;border-radius:0 8px 8px 0;
+       background:#00000030;font-size:15px}
+  .tag.avoid{border-color:var(--avoid)} .tag.stop{border-color:var(--stop)}
+  .tag.act{border-color:var(--act)}
+  .tag b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim)}
+  .verdict{border-radius:14px;padding:14px;margin:12px 0;border:1px solid}
+  .verdict.pass{border-color:var(--act);background:#2fbf7118}
+  .verdict.fail{border-color:var(--avoid);background:#e5484d18}
+  .verdict.halt{border-color:var(--stop);background:#f0932b18}
+  .verdict h3{margin:0 0 6px;font-size:17px}
+  .verdict img{width:96px;height:96px;object-fit:cover;border-radius:10px;float:right;margin-left:12px}
+  .muted{color:var(--dim);font-size:14px}
+  .banner{border:1px solid var(--avoid);background:#e5484d18;border-radius:12px;padding:12px;margin:12px 0}
+  .banner.stopc{border-color:var(--stop);background:#f0932b18}
+  ol.trace{list-style:none;padding:0;margin:0;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+  ol.trace li{border-bottom:1px solid var(--line);padding:8px 0;color:var(--dim);word-break:break-word}
+  ol.trace li b{color:var(--ink)}
+  .row{display:flex;gap:10px} .row button{margin-top:12px}
+  .hide{display:none}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid #ffffff60;border-top-color:#fff;
+        border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header><b>StepSpotter</b><small id="hdr">one step at a time</small></header>
+<main>
+
+<section id="screen-start">
+  <h1>What are you fixing?</h1>
+  <p class="sub">Write it in your own words, then take a photo of the thing itself.
+     You will get one step at a time, drawn on your photo.</p>
+  <label for="task">The job</label>
+  <textarea id="task" placeholder="e.g. Connect the two blue cables to new jacks and test the link"></textarea>
+  <label>Your photo</label>
+  <label class="filebtn" id="startPhotoLabel" for="startPhoto">Tap to take or choose a photo</label>
+  <input id="startPhoto" type="file" accept="image/*" capture="environment" class="hide">
+  <button id="startBtn">Plan my steps</button>
+  <p class="muted" id="startNote"></p>
+</section>
+
+<section id="screen-vendor" class="hide">
+  <h1>Please do not do this one yourself</h1>
+  <div class="banner stopc"><b id="vendorTitle"></b><p id="vendorReason"></p></div>
+  <p class="muted">No steps were written for this job on purpose.</p>
+  <button class="ghost" onclick="location.reload()">Start something else</button>
+</section>
+
+<section id="screen-step" class="hide">
+  <div class="card">
+    <div class="stepno" id="stepNo"></div>
+    <div class="title" id="stepTitle"></div>
+    <img id="cardImg" alt="your photo with this step marked on it">
+    <p class="muted" id="cardNote">Boxes show roughly where to look, not exactly.</p>
+    <p class="action" id="stepAction"></p>
+    <div id="stepTags"></div>
+  </div>
+  <div id="verdictBox"></div>
+  <div id="blockBox"></div>
+  <button id="photoBtn">I did it — take photo</button>
+  <input id="stepPhoto" type="file" accept="image/*" capture="environment" class="hide">
+  <button id="nextBtn" class="hide">Next step</button>
+  <div class="row">
+    <button class="stop" id="stopBtn">Stop, get a person</button>
+    <button class="ghost" id="traceBtn">See what it did</button>
+  </div>
+</section>
+
+<section id="screen-done" class="hide">
+  <h1>All steps are done</h1>
+  <div class="verdict pass"><h3 id="doneTitle"></h3>
+    <p>The last step was a check, and the photo showed it. Nothing was marked done without a photo.</p></div>
+  <button class="ghost" id="traceBtn2">See what it did</button>
+  <button class="ghost" onclick="location.reload()">Start another job</button>
+</section>
+
+<section id="screen-stopped" class="hide">
+  <h1>Stopped — a person has this now</h1>
+  <div class="banner stopc"><p id="stoppedReason"></p></div>
+  <p class="muted">Nothing else happens on this job until they answer.</p>
+  <button class="ghost" id="traceBtn3">See what it did</button>
+</section>
+
+<section id="screen-trace" class="hide">
+  <h1>Every step it took</h1>
+  <p class="sub">Plans, cards, photo verdicts and every refusal, in order.</p>
+  <ol class="trace" id="traceList"></ol>
+  <button class="ghost" id="backBtn">Back</button>
+</section>
+
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let JOB = null, BUSY = false;
+
+function show(name){
+  ["start","vendor","step","done","stopped","trace"].forEach(s =>
+    $("screen-"+s).classList.toggle("hide", s !== name));
+  window.scrollTo(0,0);
+}
+function busy(btn, on, label){
+  BUSY = on;
+  if(!btn) return;
+  btn.disabled = on;
+  if(on){ btn.dataset.label = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>'+(label||"Working…"); }
+  else if(btn.dataset.label){ btn.innerHTML = btn.dataset.label; }
+}
+async function api(url, opts){
+  const r = await fetch(url, opts||{});
+  let body = null;
+  try { body = await r.json(); } catch(e) { body = null; }
+  if(!r.ok){ throw new Error((body && (body.detail||body.message)) || ("Something went wrong ("+r.status+")")); }
+  return body;
+}
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+// ---- start ---------------------------------------------------------------
+$("startPhoto").addEventListener("change", e => {
+  const f = e.target.files[0];
+  const l = $("startPhotoLabel");
+  l.textContent = f ? ("Photo ready: " + f.name) : "Tap to take or choose a photo";
+  l.classList.toggle("has", !!f);
+});
+$("startBtn").addEventListener("click", async () => {
+  const task = $("task").value.trim(), file = $("startPhoto").files[0];
+  if(!task){ $("startNote").textContent = "Write what you want to do first."; return; }
+  if(!file){ $("startNote").textContent = "Add a photo of the thing you are fixing."; return; }
+  $("startNote").textContent = "Looking at your photo. This takes about half a minute.";
+  const fd = new FormData(); fd.append("task", task); fd.append("photo", file);
+  busy($("startBtn"), true, "Planning…");
+  try {
+    JOB = await api("/api/jobs", {method:"POST", body:fd});
+    history.replaceState(null, "", "?job=" + JOB.job_id);
+    render();
+  } catch(err){ $("startNote").textContent = err.message; }
+  finally { busy($("startBtn"), false); }
+});
+
+// ---- step ----------------------------------------------------------------
+function render(){
+  if(!JOB) return show("start");
+  $("hdr").textContent = JOB.job_title || "";
+  if(JOB.safety_class === "vendor_required"){
+    $("vendorTitle").textContent = JOB.job_title || JOB.task;
+    $("vendorReason").textContent = JOB.vendor_reason || "";
+    return show("vendor");
+  }
+  if(JOB.escalated){
+    $("stoppedReason").textContent = JOB.verdict && JOB.verdict.stop
+      ? JOB.verdict.reason : "You asked for a person to look at this.";
+    return show("stopped");
+  }
+  if(JOB.done){ $("doneTitle").textContent = JOB.job_title + " — " + JOB.total + " steps, all proven by a photo."; return show("done"); }
+
+  const s = JOB.step;
+  $("stepNo").textContent = "Step " + JOB.step_number + " of " + JOB.total;
+  $("stepTitle").textContent = s.title;
+  $("stepAction").textContent = s.action;
+  const img = $("cardImg");
+  img.src = JOB.card_url + "&t=" + Date.now();
+  img.onerror = () => { img.style.display = "none"; $("cardNote").textContent = "The marked photo could not be drawn; the words below still apply."; };
+  img.onload = () => { img.style.display = "block"; $("cardNote").textContent = "Boxes show roughly where to look, not exactly."; };
+
+  let tags = "";
+  if(s.do_not_touch && s.do_not_touch.length)
+    tags += '<div class="tag avoid"><b>Do not touch</b>' + esc(s.do_not_touch.join(" · ")) + '</div>';
+  if(s.stop_condition)
+    tags += '<div class="tag stop"><b>Stop and get a person if</b>' + esc(s.stop_condition) + '</div>';
+  tags += '<div class="tag act"><b>Your next photo must show</b>' + esc(s.evidence_required) + '</div>';
+  $("stepTags").innerHTML = tags;
+
+  const v = JOB.verdict;
+  if(v){
+    const cls = v.stop ? "halt" : (v.passed ? "pass" : "fail");
+    const head = v.stop ? "Stop — that is not safe" : (v.passed ? "That looks done" : "Not yet");
+    $("verdictBox").innerHTML = '<div class="verdict '+cls+'">'
+      + '<img src="'+v.evidence_url+'?t='+Date.now()+'" alt="the photo you sent">'
+      + '<h3>'+head+'</h3><p>'+esc(v.reason)+'</p></div>';
+  } else { $("verdictBox").innerHTML = ""; }
+  $("nextBtn").classList.toggle("hide", !(v && v.passed && !v.stop));
+  $("photoBtn").innerHTML = v ? "Take another photo" : "I did it — take photo";
+  show("step");
+}
+
+$("photoBtn").addEventListener("click", () => $("stepPhoto").click());
+$("stepPhoto").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  const fd = new FormData(); fd.append("photo", f);
+  $("blockBox").innerHTML = "";
+  busy($("photoBtn"), true, "Checking your photo…");
+  try {
+    const res = await api("/api/jobs/"+JOB.job_id+"/photo", {method:"POST", body:fd});
+    JOB = res.job; render();
+  } catch(err){ $("blockBox").innerHTML = '<div class="banner">'+esc(err.message)+'</div>'; }
+  finally { busy($("photoBtn"), false); e.target.value = ""; }
+});
+
+$("nextBtn").addEventListener("click", async () => {
+  busy($("nextBtn"), true, "Checking…");
+  try {
+    const res = await api("/api/jobs/"+JOB.job_id+"/advance", {method:"POST"});
+    JOB = res.job;
+    if(res.blocked){
+      $("blockBox").innerHTML = '<div class="banner'+(res.hazard?" stopc":"")+'"><b>'
+        + (res.hazard ? "Stopped for a person" : "Not so fast") + '</b><p>'+esc(res.reason)+'</p></div>';
+    } else { $("blockBox").innerHTML = ""; $("verdictBox").innerHTML = ""; }
+    render();
+  } catch(err){ $("blockBox").innerHTML = '<div class="banner">'+esc(err.message)+'</div>'; }
+  finally { busy($("nextBtn"), false); }
+});
+
+$("stopBtn").addEventListener("click", async () => {
+  const fd = new FormData(); fd.append("reason", "The person pressed Stop on their phone.");
+  busy($("stopBtn"), true, "Stopping…");
+  try { const res = await api("/api/jobs/"+JOB.job_id+"/escalate", {method:"POST", body:fd});
+        JOB = res.job; render(); }
+  catch(err){ $("blockBox").innerHTML = '<div class="banner">'+esc(err.message)+'</div>'; }
+  finally { busy($("stopBtn"), false); }
+});
+
+async function openTrace(){
+  try {
+    const res = await api("/api/jobs/"+JOB.job_id+"/trace");
+    $("traceList").innerHTML = res.rows.map(r => {
+      const rest = Object.keys(r).filter(k => !["at","job_id","event"].includes(k))
+        .map(k => k+"="+JSON.stringify(r[k])).join("  ");
+      return "<li><b>"+esc(r.event)+"</b> <span>"+esc(r.at)+"</span><br>"+esc(rest)+"</li>";
+    }).join("");
+    show("trace");
+  } catch(err){ alert(err.message); }
+}
+["traceBtn","traceBtn2","traceBtn3"].forEach(id => $(id).addEventListener("click", openTrace));
+$("backBtn").addEventListener("click", render);
+
+// A phone reloads, a screen locks, a browser is killed mid-job. ?job=<id> comes back
+// to the same step: the job lives on the server, the page holds nothing.
+(async function resume(){
+  const id = new URLSearchParams(location.search).get("job");
+  if(!id){ return show("start"); }
+  try { JOB = await api("/api/jobs/"+id); render(); }
+  catch(err){ show("start"); $("startNote").textContent = err.message; }
+})();
+</script>
+</body>
+</html>
