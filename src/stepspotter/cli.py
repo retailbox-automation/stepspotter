@@ -55,9 +55,10 @@ def cmd_plan(args: argparse.Namespace) -> int:
         return 0
     if plan.tools_needed:
         print("tools:  " + ", ".join(plan.tools_needed))
-    manual = next((u for u in plan.sources if u.lower().endswith(".pdf")), None)
+    manual, pages = _manual_from_trace(state.job_id)
+    if manual is None:  # no trace to read (an older job, or research switched off)
+        manual = next((u for u in plan.sources if u.lower().endswith(".pdf")), None)
     if manual:
-        pages = _manual_pages(state.job_id)
         print(f"manual: {manual}" + (f" (pages {pages})" if pages else ""))
     for url in plan.sources:
         if url != manual:
@@ -76,12 +77,21 @@ def cmd_plan(args: argparse.Namespace) -> int:
     return 0
 
 
-def _manual_pages(job_id: str) -> str:
-    """The pages the planner actually read, taken off the job's own trace."""
+def _manual_from_trace(job_id: str) -> tuple[str | None, str]:
+    """The manual URL and the pages the planner read, off the job's own trace.
+
+    The trace is the honest source: it records the URL the Researcher actually
+    downloaded. Guessing the manual out of ``plan.sources`` by a ``.pdf`` suffix
+    misfiles a manual served from a redirector under ``video:``.
+    """
     for row in store.read_trace(job_id):
-        if row.get("event") == "research" and row.get("pages"):
-            return ", ".join(str(p) for p in row["pages"])
-    return ""
+        if row.get("event") != "research":
+            continue
+        url = row.get("manual_url") or None
+        pages = ", ".join(str(p) for p in row.get("pages") or [])
+        if url or pages:
+            return url, pages
+    return None, ""
 
 
 def cmd_research(args: argparse.Namespace) -> int:

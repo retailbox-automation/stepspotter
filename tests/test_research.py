@@ -259,3 +259,67 @@ def test_summarize_reads_like_something_a_person_would_hear(monkeypatch):
     assert MANUAL_PDF in text
     assert "1 x Handle" in text          # the included list, read off the excerpt
     assert "youtube.com" in text
+
+
+# ------------------------------------------------------ whose PDF is this, really
+
+
+def test_a_two_letter_brand_does_not_claim_every_host_containing_those_letters():
+    """The rank-0 slot means "the maker's own site". A substring test gives it away.
+
+    "lg" sits inside "manualguide", "ge" inside "packagedocs" — a bare
+    ``brand in host`` hands a stranger's PDF the top of the list for any short brand.
+    """
+    assert not research.is_manufacturer_host("manualguide.com", "lg")
+    assert not research.is_manufacturer_host("packagedocs.com", "ge")
+    assert not research.is_manufacturer_host("bestmanuals.com", "man")
+
+    # the brand's own hosts still count: a whole label, a hyphen-separated word,
+    # or — for a brand long enough to be no coincidence — the start of a label
+    assert research.is_manufacturer_host("support.ge.com", "ge")
+    assert research.is_manufacturer_host("lg-electronics.com", "lg")
+    assert research.is_manufacturer_host("cdn.westinghouseoutdoorpower.com", "westinghouse")
+    assert research.is_manufacturer_host("ryobitools.com", "ryobi")
+
+
+def test_an_unrelated_pdf_ranks_below_the_makers_own_for_a_short_brand():
+    """End of the same defect, at the ranking layer the picker actually uses."""
+    stranger = research.Hit(title="LG TV manual", url="https://manualguide.com/lg/tv.pdf")
+    maker = research.Hit(title="LG TV manual", url="https://www.lg.com/manuals/tv.pdf")
+
+    assert research._rank(stranger, "lg") == 1   # a PDF, but not the maker's
+    assert research._rank(maker, "lg") == 0
+
+
+def test_a_rate_limited_run_never_downgrades_a_manual_we_already_found(tmp_path, monkeypatch):
+    """A search engine having a bad minute must not empty a good cache.
+
+    Real event, 09.09: DuckDuckGo answered HTTP 202 with a challenge page — zero
+    results, indistinguishable from "no manual exists" — and a ``--fresh`` run
+    replaced the working ePX3030 entry with a not_found one. The next plan would
+    have been ungrounded with nothing on screen to say so.
+    """
+    search = FakeSearch()
+    monkeypatch.setattr(research, "read_pdf_pages", lambda path: _pages())
+    download, _ = fake_download(tmp_path)
+
+    good = research_product(
+        "assemble my Westinghouse ePX3030 pressure washer",
+        search_fn=search,
+        download_fn=download,
+    )
+    assert good.status == "found"
+
+    # now the engine goes quiet: every query comes back empty, as under a rate limit
+    blocked = research_product(
+        "assemble my Westinghouse ePX3030 pressure washer",
+        search_fn=lambda query: [],
+        use_cache=False,
+    )
+    assert blocked.status == "not_found"          # this run is honest about itself
+    on_disk = json.loads(research.cache_path("Westinghouse ePX3030").read_text())
+    assert on_disk["status"] == "found"           # but the good answer is still there
+    assert on_disk["manual_url"] == MANUAL_PDF
+
+    # and the next ordinary run reads the manual back, not the bad minute
+    assert research_product("assemble my Westinghouse ePX3030 pressure washer").manual_url == MANUAL_PDF

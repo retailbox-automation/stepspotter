@@ -317,12 +317,38 @@ def read_pdf_pages(path: str) -> list[str]:
 # ---------------------------------------------------------------- the pieces
 
 
+def is_manufacturer_host(host: str, brand: str) -> bool:
+    """Does this host belong to the brand itself, rather than merely contain its letters?
+
+    The test is per dot-label, never a bare substring of the whole host. A plain
+    ``brand in host`` promotes an unrelated PDF to the top for any short brand:
+    "lg" sits inside "manua**lg**uide.com" and "ge" inside "packa**ge**docs.com".
+
+    A label counts when it *is* the brand ("ge.com", "support.ge.com"), when one of
+    its hyphen-separated words is the brand ("ryobi-tools.com"), or — for brands long
+    enough that the coincidence is implausible — when it starts with the brand
+    ("cdn.**westinghouse**outdoorpower.com", "**ryobi**tools.com"). Four characters is
+    that threshold; a two- or three-letter brand must match a whole label or word.
+    Losing rank 0 costs a manufacturer's PDF only its head start — it is still ranked
+    as a PDF — while a wrong rank 0 puts a stranger's document in front of the planner.
+    """
+    if not brand:
+        return False
+    for label in host.split("."):
+        words = label.split("-")
+        if brand in words or re.sub(r"[^a-z0-9]", "", label) == brand:
+            return True
+        if len(brand) >= 4 and label.startswith(brand):
+            return True
+    return False
+
+
 def _rank(hit: Hit, brand: str) -> int | None:
     """Lower is better. None means "not a manual, skip it"."""
     parsed = urllib.parse.urlparse(hit.url)
     host = parsed.netloc.lower()
     is_pdf = parsed.path.lower().endswith(".pdf")
-    if is_pdf and brand and brand in host.replace("-", ""):
+    if is_pdf and is_manufacturer_host(host, brand):
         return 0  # the manufacturer's own PDF
     if is_pdf:
         return 1
@@ -476,8 +502,21 @@ def _load_cached(product: str) -> Research | None:
 
 
 def _store_cached(res: Research) -> None:
+    """Write the answer to the cache — but never downgrade a manual we already have.
+
+    A "not found" is usually the search engine having a bad minute, not the manual
+    ceasing to exist: DuckDuckGo answers a rate-limited caller with HTTP 202 and a
+    challenge page, which parses to zero results and looks exactly like "nothing out
+    there". One ``--fresh`` run during such a minute used to replace a good cached
+    manual with an empty one, and the next plan was silently ungrounded. A find
+    always overwrites; a miss never does.
+    """
     try:
         p = cache_path(res.product)
+        if res.status != "found":
+            previous = _load_cached(res.product)
+            if previous is not None and previous.status == "found":
+                return
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(res.model_dump_json(indent=2))
     except Exception:  # noqa: BLE001
@@ -494,8 +533,9 @@ def research_product(
     """Everything the planner gets to know about the product, or an honest empty answer.
 
     Cached per product under ``data/manuals/<slug>.json``, so the second run of the
-    same job is offline and instant. Failures are never cached — a search engine
-    having a bad minute should not poison the next attempt.
+    same job is offline and instant. A thrown failure is never cached at all, and a
+    "not found" never replaces a manual already in the cache — a search engine having
+    a bad minute should not poison the next attempt (see ``_store_cached``).
     """
     if not enabled():
         return Research(status="no_product", note="research switched off (STEPSPOTTER_RESEARCH=0)")
