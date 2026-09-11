@@ -105,6 +105,8 @@ empty filesystem, and on 2026-09-11 DuckDuckGo answered us with HTTP 202 (its
 rate-limit challenge) for every query, which parses to zero results and is indistinguish-
 able from "no manual exists". `python tools/bake_manual_cache.py "<brand model>" <url>`
 adds a model to the baked cache: excerpt, pages and the maker's link, without the PDF.
+Both images run offline, the engines caught refusing live, and the two step cards a
+person sees: [`data/demo/research-hardening/`](data/demo/research-hardening/).
 
 - **No API key.** DuckDuckGo and Brave's HTML pages and `pypdf`; a stranger can run it cold.
 - **Switch it off** with `STEPSPOTTER_RESEARCH=0` — it returns before any socket
