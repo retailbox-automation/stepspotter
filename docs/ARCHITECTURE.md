@@ -25,9 +25,10 @@ here implies code that does not exist.
 This is the table the judging rubric's Technical Implementation criterion asks
 for directly ("How thoroughly and skillfully does the project use Strands
 Agents?") — naming the mechanism, the step it sits at, and the alternative it
-replaces, the way the pattern-mining across 25 winning Devpost pages found in
-every strong AWS entry (`docs/WIDE-BRAINSTORM-2026-09-04-INTERIM.md` §5: "which
-service, at which step, instead of which alternative — not a tag").
+replaces, the way the pattern-mining across 25 winning Devpost pages
+found in every strong AWS entry: which service, at which step, instead of which
+alternative — not a tag. (That research lives in our private project notes, not in
+this repository, so it is named here rather than linked.)
 
 | Step | Strands feature | Verified | Instead of |
 |---|---|---|---|
@@ -138,5 +139,5 @@ flowchart TB
 - `src/stepspotter/web/` — the phone-first web UI (FastAPI) — **Built**
 - `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/` — the eval harness + smoke fixtures — **Built**
 - `src/stepspotter/memory.py` — Memory: house memory on disk; the conversation itself is the SDK's `FileSessionManager` — **Built**
-- `tests/test_gate.py`, `tests/test_card.py`, `tests/test_guide_chat.py`, and the rest of `tests/` — 114 passed, 1 skipped with the `agentcore` extra installed; 101 passed, 2 skipped from a plain `pip install -e ".[dev]"`, which is the cold-clone path (`python -m pytest -q`)
+- `tests/test_gate.py`, `tests/test_card.py`, `tests/test_guide_chat.py`, and the rest of `tests/` — from a fresh clone, 111 passed, 4 skipped with the `agentcore` extra and 98 passed, 5 skipped without it (`python -m pytest -q -rs` names every skip); 114 / 1 and 101 / 2 on a checkout that also has the raw photo archive next to it
 - `docs/EVAL-PLAN.md` — the eval set that exercises Verifier + Gate together against a real job

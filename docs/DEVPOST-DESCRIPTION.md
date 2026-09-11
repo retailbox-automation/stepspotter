@@ -20,10 +20,10 @@ Hiring someone is the obvious answer. I tried: roughly three dozen contractors h
 quoted since we bought the house, more than half of those jobs failed, stalled or had to be
 redone. The ones I did myself went better.
 
-What works for me is my phone. I take a photo, and someone explains it back to me on that
-exact photo — a circle around the part I need, an arrow, "not this one, that one." One thing
-at a time. That is the only reason I got through replacing a UPS battery and terminating
-network jacks in my own panel this month without calling anyone.
+What works for me is my phone. I take a photo, and someone explains it back on that exact
+photo — a circle around the part I need, an arrow, "not this one, that one." One thing at a
+time. That is the only reason I got through replacing a UPS battery and terminating network
+jacks in my own panel this month without calling anyone.
 
 StepSpotter is that, built into an agent, with one rule: it cannot take my word that a step
 is done. It has to see it.
@@ -41,9 +41,9 @@ finds the manufacturer's own manual first, pulls out the assembly pages, and wri
 steps in the manual's order and part names, **each step citing the page it came from**. The
 photo still outranks the manual: if what's in front of you doesn't match, the step says so.
 
-A photo showing something unsafe — heat, swelling, a burnt smell, bare live wire — doesn't
-just fail the step: it stops the run and hands it to a person. A job that needs a licensed
-trade never gets a plan at all.
+A photo showing something unsafe — heat, swelling, a burnt smell, bare wire — doesn't just
+fail the step: it stops the run and hands it to a person. A job that needs a licensed trade
+never gets a plan at all.
 
 
 ## How we built it
@@ -51,8 +51,8 @@ trade never gets a plan at all.
 **Strands Agents** is the SDK end to end, and each role maps to a feature of it:
 
 - **Verifier** — reads one photo against one claim and returns a typed verdict (pass /
-  fail / stop, with a reason) via `structured_output_model=` on the invocation: a real
-  `StepVerdict` object, not free text scraped with a regex.
+  fail / stop, with a reason) via `structured_output_model=`: a real `StepVerdict` object,
+  not free text scraped with a regex.
 - **Gate** — the piece that matters most. A Strands `BeforeToolCallEvent` hook sets
   `event.cancel_tool = "<reason>"`, killing the `advance_step` call before the SDK
   dispatches it, unless the Verifier already passed the current step. We proved it live
@@ -67,8 +67,7 @@ trade never gets a plan at all.
   markers. No API key; five sources tried in order (this container's cache, the cache baked
   into the image, a checked index, DuckDuckGo, Brave), and the card names the one that
   answered.
-- **Marker** — draws the highlight on your photo, snapped to a coarse grid: a soft hint,
-  not a precise claim.
+- **Marker** — draws the highlight on your photo, snapped to a grid: a hint, not a claim.
 - **Guide** — the agent you talk to: six `@tool` functions and a Strands
   `FileSessionManager`, so a job survives a restart instead of starting over.
 
@@ -106,7 +105,7 @@ because not used: `strands_tools`, `MCPClient`, `vended_interventions`, "agent a
 - 8/8 correct pass/fail verdicts on real photos of my own panel, including every case where
   the claimed object wasn't in the frame — it refused instead of guessing.
 - Two published eval runs with the misses left in, 6/6 red-team photos rejected across both,
-  and 114 tests passing offline.
+  and 111 tests that pass offline on a fresh clone.
 
 
 ## What we learned
@@ -121,18 +120,18 @@ instead of hoping the model stays polite.
 
 - Run the 12-step eval set on photos of the finished job and publish every result.
 - A "what do I even need to do?" mode — I didn't know a Florida house needs its condensate
-  line cleared until things went wrong.
-- Ask and re-plan mid-job: the plan is fixed when the job starts, and questions work only in
-  chat mode.
-- Job state in S3 instead of `/tmp`; segmentation instead of a bounding box; tighter IAM
-  and sign-in on the public URL.
+  line cleared until it went wrong.
+- Ask and re-plan mid-job: the plan is fixed at the start, questions work only in chat.
+- Job state in S3 instead of `/tmp`; segmentation instead of a box; tighter IAM and
+  sign-in on the public URL.
 
 
 
 ## How this maps to the judging criteria
 
 **Technical Implementation** — eight roles on Strands, the hook system used as an
-enforcement boundary rather than for logging, 114 tests passing offline, the phone app live
+enforcement boundary rather than for logging, 111 tests passing offline on a fresh clone,
+the phone app live
 on App Runner and the Guide agent READY on AgentCore Runtime. Every SDK claim has a file and
 line in the README.
 
@@ -154,8 +153,8 @@ with a prompt written to defeat it. The domain shows in the small things: per-st
 conditions, "don't touch" zones, a manual page on every step, and a refusal to plan
 anything involving mains or gas.
 
-**Presentation** — the video runs the real app on a real job in my own house, including the
-moment it refuses a wrong photo and the eval miss it does not hide.
+**Presentation** — the video runs the real app on a real job in my house, including the
+moment it refuses a wrong photo and the eval miss it doesn't hide.
 
 
 ## Testing instructions for judges
@@ -170,33 +169,33 @@ buttons go straight to the rear camera. `/healthz` returns `{"ok":true,...}`.
 - **The thing to try:** submit `fixtures/onq-keystone-smoke/redteam/R1-wrong-photo.jpg` as
   evidence instead. Expected: a "Not yet" verdict naming what's missing, the step counter
   unchanged, no way forward — `event.cancel_tool` firing in `src/stepspotter/gate.py`, and
-  the trace view shows it.
+  the trace shows it.
 - **The manual research, live on that same URL:** start a job with the task *"assemble
   Westinghouse ePX3030 pressure washer"* and any photo. The step cards come back citing
   manual pages, and the source line reads *"Manual found via the copy baked into the image
   — pages 10–14"* — the container answering from its build-time cache, so the demo doesn't
-  depend on a search engine being in a good mood.
+  depend on a search engine's mood.
 - Ask it to plan something behind a breaker panel or a gas line. Expected: no steps, one
   sentence telling you to call a professional.
 
-**2. Cold, from the repository** — no AWS account needed. Python 3.12+:
+**2. Cold, from the repo** — no AWS account needed. Python 3.12+:
 
 ```bash
 git clone https://github.com/retailbox-automation/stepspotter && cd stepspotter
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-python -m pytest -q                            # 101 passed, 2 skipped
+python -m pytest -q                            # 98 passed, 5 skipped
 stepspotter research "Westinghouse ePX3030"    # finds the maker's manual, offline
 ```
 
-Install `".[dev,agentcore]"` instead and it is 114 passed, 1 skipped: that extra carries the
-optional AgentCore SDK, without which the one test file needing it skips itself.
+Install `".[dev,agentcore]"` instead and it is 111 passed, 4 skipped. Those counts come from
+a real fresh clone, and every skip names its own reason under `pytest -rs`.
 
 With Bedrock credentials exported in the same shell command, `stepspotter serve` runs the
 web UI and `stepspotter eval fixtures/ --repeat 2` runs the harness. Both published runs are
 in `docs/eval-results/`, misses included: 2026-09-09, 3/3 steps and 3/3 red-team; 2026-09-11,
-**2/3 steps** (a black cable covered the port labels, so the Verifier refused a step that
-was done) and 3/3 red-team. The 12-step set in `docs/EVAL-PLAN.md` has not been run.
+**2/3 steps** (a cable covered the port labels, so the Verifier refused a step that was
+done) and 3/3 red-team. The 12-step set in `docs/EVAL-PLAN.md` has not been run.
 
 
 ## Built with
