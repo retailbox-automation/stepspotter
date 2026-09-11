@@ -177,7 +177,7 @@ def create_app(service: JobService | None = None) -> FastAPI:
         if cached and Path(cached).is_file():
             return FileResponse(cached, media_type="image/jpeg")
         try:
-            path, _boxes = svc.card(state)
+            path, _boxes = svc.card(state, layout="photo")
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=502, detail=f"Could not draw the card: {exc}")
         return FileResponse(str(path), media_type="image/jpeg")

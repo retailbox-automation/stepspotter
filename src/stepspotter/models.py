@@ -71,7 +71,13 @@ class Step(BaseModel):
     )
     highlight_targets: list[str] = Field(
         default_factory=list,
-        description="objects to mark on the person's photo for this step",
+        description=(
+            "AT MOST TWO objects to mark on the person's photo for this step: the one "
+            "place to work, and (only if it is genuinely dangerous) the one thing to "
+            "keep away from. Everything else they must leave alone belongs in "
+            "do_not_touch, which is printed as words — a photo with five highlights "
+            "on it points at nothing."
+        ),
     )
     source: str | None = Field(
         default=None,
@@ -138,7 +144,10 @@ class StepVerdict(BaseModel):
         description="true when the photo shows a hazard: heat, swelling, scorching, water, "
         "smoke, or exposed live wiring. Raises the job to a human.",
     )
-    evidence_boxes: list[Box] = Field(default_factory=list)
+    evidence_boxes: list[Box] = Field(
+        default_factory=list,
+        description="at most two boxes: what you looked at to decide. Leave empty if unsure.",
+    )
 
 
 class JobState(BaseModel):
