@@ -105,7 +105,7 @@ because not used: `strands_tools`, `MCPClient`, `vended_interventions`, "agent a
 - 8/8 correct pass/fail verdicts on real photos of my own panel, including every case where
   the claimed object wasn't in the frame — it refused instead of guessing.
 - Two published eval runs with the misses left in, 6/6 red-team photos rejected across both,
-  and 111 tests that pass offline on a fresh clone.
+  and 184 tests that pass offline on a fresh clone (`pip install -e ".[dev,agentcore]"`, measured 11 Sept).
 
 
 ## What we learned
@@ -130,7 +130,7 @@ instead of hoping the model stays polite.
 ## How this maps to the judging criteria
 
 **Technical Implementation** — eight roles on Strands, the hook system used as an
-enforcement boundary rather than for logging, 111 tests passing offline on a fresh clone,
+enforcement boundary rather than for logging, 184 tests passing offline on a fresh clone,
 the phone app live
 on App Runner and the Guide agent READY on AgentCore Runtime. Every SDK claim has a file and
 line in the README.

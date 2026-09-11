@@ -128,6 +128,9 @@ flowchart TB
 - `src/stepspotter/gate.py` — Gate (the `StepGate` hook, promoted from `spikes/spike_gate.py`) — **Built**
 - `src/stepspotter/planner.py` — Planner, including the safety fork (no separate `safety.py`) — **Built**
 - `src/stepspotter/marker.py` — Marker — **Built**
+- `src/stepspotter/web/demo.py`, `src/stepspotter/web/demo_photos/` — judge demo: the "Try a demo job" path runs the real Planner and Verifier on three bundled panel photos — **Built**
+- `src/stepspotter/web/limits.py` — caps in front of the endpoints that spend money (per-IP hourly, global daily, kill switch `STEPSPOTTER_PAUSED`) — **Built**
+- `src/stepspotter/web/trace_view.py` — human view of the trace, paths and ids scrubbed; raw rows behind an explicit link — **Built**
 - `src/stepspotter/research.py`, `data/manuals/` — Researcher. Sources are tried in a
   fixed order — writable cache, the cache baked into the image, the checked
   `index.json`, DuckDuckGo, Brave — and the one that answered, plus the reason each
