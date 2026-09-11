@@ -1,0 +1,48 @@
+# Verified 2026-09-11T13:10:07Z — same image, network ON (built from 39e6992)
+
+# rung 3: in index.json, not baked -> straight to the maker URL, no search engine needed
+$ docker run --rm --platform linux/amd64 stepspotter:hardening-amd64 stepspotter research "Legrand EN0800" --chars 160
+product: Legrand EN0800
+status:  found
+source:  index — the checked index of models, straight to the maker's URL
+  tried:  cache: nothing cached for this model yet
+manual:  https://assets-us-01.kc-usercontent.com/ac3a0e75-5aa5-00ab-8ef5-b054c7b6f543/40958988-7cfd-48fe-a17b-f6b762523c73/ON-Q%20Structured%20Wiring%20&%20Connectivity%20Guide.pdf
+saved:   /data/manuals/on-q-20structured-20wiring-20-20connectivity-20guide-pdf.pdf
+pages:   4, 6
+
+--- excerpt (2840 chars, first 160) ---
+[p.4]
+WWW.LEGRAND.US/ONQ
+4
+ON-Q
+AC1034
+ENCLOSURES
+• Enclosure trim ring comes free, essential for 
+concealing drywall cutouts for a professional look
+• Universa
+--- end excerpt ---
+
+videos:
+  YouTube youtube.com › s.r. network Assembly of Legrand Linkeo 19’’ Rack Cabinet 600 Depth | 17 U to 47 U | S.R. Network 
+    https://www.youtube.com/watch?v=Xra05LVgBC0
+  YouTube youtube.com › legrand australia Legrand ACB - Installation Guide for various accessories - YouTube
+    https://www.youtube.com/watch?v=D_nmlqtIAww
+  YouTube youtube.com › user › legrandvideos Legrand France - YouTube
+    https://www.youtube.com/user/legrandvideos
+  YouTube youtube.com › legrand, north america Wiremold: How to Install the Outdoor Ground Box Cover Assembly - YouTube
+    https://www.youtube.com/watch?v=ZAKOFmudUig
+  YouTube youtube.com › user › legrand Legrand - YouTube
+    https://www.youtube.com/user/legrand
+exit=0
+
+# rungs 4-5: neither baked nor indexed -> the engines, in order, whatever they say today
+$ docker run --rm --platform linux/amd64 stepspotter:hardening-amd64 stepspotter research "Westinghouse ePX3050" --chars 160
+product: Westinghouse ePX3050
+status:  not_found
+source:  none — nothing — no manual was found
+  tried:  cache: nothing cached for this model yet
+  tried:  index: no entry for westinghouse-epx3050
+  tried:  duckduckgo: HTTP 202, the rate-limit challenge page
+  tried:  brave: HTTP 429
+note:    no readable manual PDF turned up for this model
+exit=1

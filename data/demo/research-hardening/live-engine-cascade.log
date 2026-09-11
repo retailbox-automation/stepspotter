@@ -1,0 +1,23 @@
+# What the two search engines actually did from this Mac on 2026-09-11.
+# Each line: research.search_all(query) -> (hits, the engine that answered, why the earlier ones did not).
+
+## 13:07:58Z — six lookups in a row
+Westinghouse ePX3030 owner's manual pdf    engine=(none) hits=  0 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page', 'brave: HTTP 429']
+Ryobi RY31012 operator manual pdf          engine=(none) hits=  0 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page', 'brave: HTTP 429']
+Honeywell TH6220 installation manual pdf   engine=(none) hits=  0 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page', 'brave: HTTP 429']
+Milwaukee 2767-20 operator manual pdf      engine=(none) hits=  0 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page', 'brave: HTTP 429']
+DeWalt DCD791 instruction manual pdf       engine=(none) hits=  0 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page', 'brave: HTTP 429']
+Bosch GLL3-330CG manual pdf                engine=(none) hits=  0 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page', 'brave: HTTP 429']
+
+## 13:09-13:15Z — the same single query retried while the limits cooled off
+2026-09-11T13:09:23+00:00  attempt 1: engine=(none) hits=0 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page', 'brave: HTTP 429']
+2026-09-11T13:11:26+00:00  attempt 2: engine=(none) hits=0 skipped=['duckduckgo: answered [403, 403, 403] and parsed to zero results', 'brave: HTTP 429']
+2026-09-11T13:13:28+00:00  attempt 3: engine=(none) hits=0 skipped=['duckduckgo: answered [403, 403, 403] and parsed to zero results', 'brave: HTTP 429']
+2026-09-11T13:15:29+00:00  attempt 4: engine=brave hits=26 skipped=['duckduckgo: HTTP 202, the rate-limit challenge page']
+
+# Read it as: both engines rate-limit an ordinary caller, independently and without
+# warning, and a 202 or a 403 page parses to zero results — which is indistinguishable
+# from 'this model has no manual'. At 13:15:29Z Brave came back and carried the lookup
+# DuckDuckGo could not. Between 13:09 and 13:13 neither could, and only the cache baked
+# into the image and the checked index.json kept a demo grounded (see the two container
+# logs next to this file, both taken inside that window).

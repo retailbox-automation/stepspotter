@@ -1,0 +1,76 @@
+# Verified 2026-09-11T13:09:12Z — image stepspotter:hardening-amd64 (linux/amd64), built from this branch at 39e6992
+# Build: docker buildx build --platform linux/amd64 --provenance=false --sbom=false --output type=docker -t stepspotter:hardening-amd64 .
+
+$ docker run --rm --platform linux/amd64 --network none stepspotter:hardening-amd64 ls /app/data/manuals
+index.json
+ryobi-ry31012.json
+westinghouse-epx3030.json
+
+# the model we film with, container cut off from the network entirely
+$ docker run --rm --platform linux/amd64 --network none stepspotter:hardening-amd64 stepspotter research "Westinghouse ePX3030" --chars 240
+product: Westinghouse ePX3030
+status:  found
+source:  bundled — the copy baked into the image (no network)
+  tried:  bundled: read from westinghouse-epx3030.json (originally found via index)
+note:    cached excerpt only — the PDF itself is not shipped, open manual_url for it
+manual:  https://cdn.westinghouseoutdoorpower.com/owners_manuals/ePX3030_manual_web.pdf
+saved:   (excerpt only — open the link above for the PDF itself)
+pages:   10, 11, 12, 13, 14
+
+--- excerpt (7008 chars, first 240) ---
+[p.10]
+10 | English
+ASSEMBLY
+WARNING  Do not connect the pressure washer to a power supply until it is fully assembled. To avoid accidental 
+starting and possible serious injury, only connect a power supply when the pressure washer is ready
+--- end excerpt ---
+exit=0
+
+$ ... --network none ... stepspotter research "Ryobi RY31012" --chars 160
+product: Ryobi RY31012
+status:  found
+source:  bundled — the copy baked into the image (no network)
+  tried:  bundled: read from ryobi-ry31012.json (originally found via index)
+note:    cached excerpt only — the PDF itself is not shipped, open manual_url for it
+manual:  https://images.thdstatic.com/catalog/pdfImages/9f/9fcec3ed-a85b-415a-b2cc-89cc1a79994c.pdf
+saved:   (excerpt only — open the link above for the PDF itself)
+pages:   1
+
+--- excerpt (2865 chars, first 160) ---
+[p.1]
+12 in. Surface Cleaner Attachment
+RY31012
+WARNING:
+To reduce the risk of injury, user must read and understand the 
+operator’s manual for their pressure w
+--- end excerpt ---
+exit=0
+
+# neither baked nor indexed, no network: honest, and names every rung it tried
+$ ... --network none ... stepspotter research "APC BX1350M"
+product: APC BX1350M
+status:  not_found
+source:  none — nothing — no manual was found
+  tried:  cache: nothing cached for this model yet
+  tried:  index: no entry for apc-bx1350m
+  tried:  duckduckgo: no answer at all (offline, timed out, or blocked)
+  tried:  brave: HTTP 0
+note:    no readable manual PDF turned up for this model
+exit=1
+
+# The AgentCore image carries the same cache — 2026-09-11T13:09:49Z
+$ docker build --platform linux/arm64 -f Dockerfile.agentcore -t stepspotter-agentcore:hardening .
+$ docker run --rm --platform linux/arm64 --network none stepspotter-agentcore:hardening ls /app/data/manuals
+index.json
+ryobi-ry31012.json
+westinghouse-epx3030.json
+$ docker run --rm --platform linux/arm64 --network none stepspotter-agentcore:hardening stepspotter research "Westinghouse ePX3030" --chars 0
+product: Westinghouse ePX3030
+status:  found
+source:  bundled — the copy baked into the image (no network)
+  tried:  bundled: read from westinghouse-epx3030.json (originally found via index)
+note:    cached excerpt only — the PDF itself is not shipped, open manual_url for it
+manual:  https://cdn.westinghouseoutdoorpower.com/owners_manuals/ePX3030_manual_web.pdf
+saved:   (excerpt only — open the link above for the PDF itself)
+pages:   10, 11, 12, 13, 14
+exit=0
