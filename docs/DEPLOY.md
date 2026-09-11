@@ -159,6 +159,16 @@ What was proven rather than assumed:
   `usable: False`. The probe can fail, which is what makes the positive result evidence.
   On the live runtime, AgentCore **v3** answered `statusCode` 200 in **7 s** with the
   manual URL and assembly pages **10–14**, and its container log shows `Tool #1: find_manual`.
+  And on the **hosted web service**, job `job-20260911-160555-0d3e` for *assemble
+  Westinghouse ePX3030 pressure washer* wrote this research row:
+  `status: found`, `source: "bundled"`, `pages: [10, 11, 12, 13, 14]`, note *"cached
+  excerpt only — the PDF itself is not shipped"* — rendered for a person as **"Found it
+  via the copy baked into the image (no network) — pages 10, 11, 12, 13, 14"**. That job
+  had to wait out the hour cap the earlier probe had spent, which is itself the cap
+  working on the judges' own URL.
+* **Scanners cannot spend anything.** Five `GET /api/jobs` from the open internet in this
+  window answered **405** — not a route, and not metered, because `bucket_for()` only
+  counts the POSTs that reach a model.
 
 ⚠️ `find_manual()` on its own is the *download* path: offline it reports the index URL
 "would not download", then falls through to the search engines and returns `None`. The
