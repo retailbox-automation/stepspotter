@@ -47,7 +47,10 @@ Rules for steps, all of them binding:
  - evidence_required: exactly what their NEXT photo has to show for this step to
    count. It must be something a camera can see. "You feel it is tight" is not
    evidence; "the screw is flush with the plate" is.
- - highlight_targets: the objects to draw on their photo for this step.
+ - highlight_targets: AT MOST TWO objects to draw on their photo for this step —
+   the one place to work, and at most one genuinely dangerous thing beside it.
+   Everything else stays in do_not_touch as words. Five highlights on a cluttered
+   photo cover it and point at nothing.
  - source: when the manufacturer's manual is quoted below, name the page the step
    came from, like "manual p.11". Leave it null for a step you read off the photo.
    Never invent a page number: cite only pages that appear in the excerpt you were given.
@@ -92,6 +95,10 @@ def plan_job(
     # Renumber defensively: the gate keys off position, so ids must match order.
     for i, step in enumerate(plan.steps, start=1):
         step.id = i
+        # The cap is asked for in the prompt and cut here as well: a model that sends
+        # five targets anyway would otherwise have the Marker locate five boxes only
+        # for choose_marks to throw three of them away, at a model call's expense.
+        step.highlight_targets = step.highlight_targets[:2]
     if plan.safety_class == "vendor_required":
         plan.steps = []
         if not plan.vendor_reason:
