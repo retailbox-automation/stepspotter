@@ -83,6 +83,7 @@ stepspotter research "Westinghouse ePX3030"     # no AWS credentials needed for 
 ```
 product: Westinghouse ePX3030
 status:  found
+source:  bundled — the copy baked into the image (no network)
 manual:  https://cdn.westinghouseoutdoorpower.com/owners_manuals/ePX3030_manual_web.pdf
 pages:   10, 11, 12, 13, 14
 ```
@@ -92,13 +93,27 @@ Same job, with and without the manual, run live end to end:
 version — without it, the plan never mentions the handle, the two mounts or the four
 screws, and reports "no tools required" for a job that needs a screwdriver.
 
-- **No API key.** DuckDuckGo's HTML endpoint and `pypdf`; a stranger can run it cold.
+**Five places to look, in that order, and it tells you which one answered.** The cache
+this container already wrote → the cache baked into the image at build time
+(`data/manuals/`, copied in by both Dockerfiles) → a hand-checked model-to-URL index
+(`data/manuals/index.json`, every entry fetched and recorded with its date) →
+DuckDuckGo → Brave. The step card on the phone says *"Manual found via the copy baked
+into the image"*, or, when nothing was found, *"No manual found, so these steps come
+from the photo alone"* with the list of what was tried — an ungrounded plan is never
+allowed to look like a grounded one. Why the ladder: a hosted container starts with an
+empty filesystem, and on 2026-09-11 DuckDuckGo answered us with HTTP 202 (its
+rate-limit challenge) for every query, which parses to zero results and is indistinguish-
+able from "no manual exists". `python tools/bake_manual_cache.py "<brand model>" <url>`
+adds a model to the baked cache: excerpt, pages and the maker's link, without the PDF.
+
+- **No API key.** DuckDuckGo and Brave's HTML pages and `pypdf`; a stranger can run it cold.
 - **Switch it off** with `STEPSPOTTER_RESEARCH=0` — it returns before any socket
   opens. The test suite sets exactly that, so nothing offline depends on a search
   engine.
 - **Nothing to look up, nothing to fetch.** No brand-and-model in what you typed
   means no network call at all.
-- **Cached** per product under `data/manuals/<product>.json` (plus the PDF itself), so
+- **Cached** per product under `data/manuals/<product>.json` (plus the PDF when this
+  machine was the one that downloaded it; a baked entry carries the excerpt only), so
   the second run of the same job is instant and offline. A later run that finds
   nothing leaves that cache alone: search engines rate-limit, and a bad minute must
   not empty a manual you already have.

@@ -27,7 +27,8 @@ from stepspotter import research  # noqa: E402
 
 def bake(product: str, url: str, out_dir: Path) -> int:
     print(f"downloading {url}")
-    pdf = research.download(url, dest_dir=str(out_dir / "_tmp"))
+    scratch = out_dir / "_tmp"
+    pdf = research.download(url, dest_dir=str(scratch))
     if pdf is None:
         print("  that URL did not come back as a PDF — nothing written", file=sys.stderr)
         return 1
@@ -52,7 +53,11 @@ def bake(product: str, url: str, out_dir: Path) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     dest = out_dir / f"{research.slug(product)}.json"
     dest.write_text(res.model_dump_json(indent=2))
+    # The PDF and its scratch dir must not survive: data/manuals is copied into the
+    # image wholesale, and an empty _tmp/ riding along is noise at best.
     Path(pdf).unlink(missing_ok=True)
+    if scratch.is_dir() and not any(scratch.iterdir()):
+        scratch.rmdir()
     print(f"  {len(pages)} pages read, pages {excerpt.pages} kept, {len(excerpt.text)} chars")
     print(f"  wrote {dest}")
     return 0

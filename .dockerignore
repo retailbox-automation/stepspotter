@@ -7,6 +7,7 @@ data/**
 !data/.gitkeep
 !data/manuals
 !data/manuals/*.json
+data/manuals/_tmp
 docs/
 tests/
 spike/

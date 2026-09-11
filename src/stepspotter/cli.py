@@ -110,7 +110,10 @@ def cmd_research(args: argparse.Namespace) -> int:
         print(f"note:    {found.note}")
     if found.manual_url:
         print(f"manual:  {found.manual_url}")
-        print(f"saved:   {found.manual_path}")
+        if found.manual_path:
+            print(f"saved:   {found.manual_path}")
+        else:
+            print("saved:   (excerpt only — open the link above for the PDF itself)")
         print("pages:   " + ", ".join(str(p) for p in found.manual_pages))
         head = found.excerpt[: args.chars]
         print(f"\n--- excerpt ({len(found.excerpt)} chars, first {len(head)}) ---")

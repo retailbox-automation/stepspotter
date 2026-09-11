@@ -88,6 +88,13 @@ flowchart TD
 - `src/stepspotter/gate.py` — Gate (the `StepGate` hook, promoted from `spikes/spike_gate.py`) — **Built**
 - `src/stepspotter/planner.py` — Planner, including the safety fork (no separate `safety.py`) — **Built**
 - `src/stepspotter/marker.py` — Marker — **Built**
+- `src/stepspotter/research.py`, `data/manuals/` — Researcher. Sources are tried in a
+  fixed order — writable cache, the cache baked into the image, the checked
+  `index.json`, DuckDuckGo, Brave — and the one that answered, plus the reason each
+  earlier one did not, is written to the job trace and shown on the step card. The
+  baked cache is what makes a hosted demo independent of a search engine: the
+  container filesystem is ephemeral, so without it every first request would go
+  online, where a rate limit looks exactly like "this model has no manual" — **Built**
 - `src/stepspotter/guide.py` — Guide (the tools + agent) — **Built**
 - `src/stepspotter/web/` — the phone-first web UI (FastAPI) — **Built**
 - `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/` — the eval harness + smoke fixtures — **Built**
