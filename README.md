@@ -1,10 +1,8 @@
 # StepSpotter
 
 **One small step at a time, on *your own* photo — and the next step stays locked
-until your photo proves the last one was done safely.**
-
-Built with **Strands Agents** (AWS) for the Agents for Humans hackathon, Everyday
-Agents track.
+until your photo proves the last one was done safely.** Built on **Strands Agents**
+(AWS) for the Agents for Humans hackathon, Everyday Agents track.
 
 **Live demo: https://w7ihmvgxxj.us-east-1.awsapprunner.com** — open it on a phone; the
 photo buttons go straight to the rear camera. (AWS App Runner, us-east-1. The Guide
@@ -105,14 +103,45 @@ screws, and reports "no tools required" for a job that needs a screwdriver.
 - **Never fatal.** A dead search engine, a scanned manual with no text layer, a 404 —
   each comes back as a status, and the repair carries on without it.
 
+## Strands Agents features used
+
+Every line below is in this repository; nothing here is aspirational.
+
+| Strands API | Where | What it does here |
+|---|---|---|
+| `Agent(...)` + `strands.models.BedrockModel` | `src/stepspotter/vision.py:65-66` | every vision call — planning, marking, verifying — goes through one Strands agent on Amazon Bedrock |
+| `structured_output_model=` on the invocation, read back as `result.structured_output` | `src/stepspotter/vision.py:84-85` | typed objects instead of parsed text. `Agent.structured_output(...)` is deprecated in 1.54.0; this is the current call shape |
+| Typed outputs in use | `src/stepspotter/planner.py:90` (`Plan`), `src/stepspotter/verifier.py:53` (`StepVerdict`) | the plan and the pass/fail verdict are Pydantic models the SDK fills, not free text a regex has to survive |
+| `HookProvider` + `registry.add_callback(BeforeToolCallEvent, ...)` | `src/stepspotter/gate.py:30, 47-50` | the gate registers itself in front of every tool call |
+| `event.cancel_tool = "<reason>"` | `src/stepspotter/gate.py:81` | the refusal itself: `advance_step` is cancelled in code, and the string is the message the user reads |
+| `event.interrupt(...)` | `src/stepspotter/gate.py:64` and `:137` | a hazard stops the whole run (`stop_reason='interrupt'`) instead of failing one call and letting the loop continue |
+| `@tool` × 6 | `src/stepspotter/guide.py:253, 277, 291, 306, 332, 347` | `start_job`, `find_manual`, `show_step`, `submit_photo`, `advance_step`, `escalate` — the Guide's whole surface |
+| `strands.session.FileSessionManager` passed as `Agent(session_manager=...)` | `src/stepspotter/guide.py:397-403` | the conversation survives a restart; resuming a job is the SDK's job, not a homemade chat log |
+| `HookRegistry` + a hand-built `BeforeToolCallEvent` | `src/stepspotter/guide.py:484-504` | the web UI does not talk to the model at all, and still goes through the *same* gate object — one policy, two front doors |
+| Amazon Bedrock AgentCore Runtime entrypoint | `src/stepspotter/agentcore_entry.py:54, 60, 236` | `BedrockAgentCoreApp` + `@app.entrypoint`, deployed and READY (`docs/DEPLOY.md`) |
+
+Not used, so not claimed: `strands_tools` built-ins, `MCPClient`, and the
+`vended_interventions` helpers. The human-in-the-loop path here is the hook's own
+`event.interrupt(...)`.
+
 ## The checkable number
 
-An eval set built around a real job — an OnQ low-voltage panel, two Cat5e runs
-terminated into keystone jacks, patch cords, cable-tester checks — as 12 steps
-with a required evidence photo each, plus a red-team set of deliberately wrong
-photos (wrong object, a step skipped ahead, no photo at all, an unsafe state, a
-photo too blurry to judge). Every result — including every miss — gets published.
-Plan and fixture layout: [`docs/EVAL-PLAN.md`](docs/EVAL-PLAN.md).
+The eval harness runs every fixture photo through the same `advance_step` / gate
+code path the app itself uses, and exits non-zero if any red-team photo gets past
+the gate on any repeat.
+
+**What has actually been run and published** (`docs/eval-results/2026-09-09.md`,
+live against Bedrock, `--repeat 1`): the checked-in smoke fixture —
+`fixtures/onq-keystone-smoke/`, 3 steps off real photos of my own low-voltage
+panel — **3/3 steps confirmed, 3/3 wrong photos rejected**, 100% boolean agreement.
+The three red-team photos are a front-face jack instead of an open wall box, a
+different room's cabling instead of the panel, and no photo at all.
+
+The full target set — the same job written out as 12 steps, red-team rows R1–R6 —
+is specified in [`docs/EVAL-PLAN.md`](docs/EVAL-PLAN.md) and **not yet run**: it
+needs the evidence photos from the finished job, which do not exist yet. That
+document marks which rows are real and which are still the target shape, and every
+result we do run gets published with its misses intact.
 
 ## Challenges we ran into
 
@@ -157,25 +186,31 @@ polite.
 
 ## What's next
 
-- Finish the Guide/Planner/Marker roles and wire them to the already-proven
-  Verifier + Gate.
-- Run the full eval set in `docs/EVAL-PLAN.md` and publish every result.
-- A phone-first web UI and a live deployment.
-- Safety-fork triage (mains electrical, gas, roofing → "call a pro," not steps).
-- Optional: memory of what's already been done in a given house, across jobs.
+- Run the full 12-step eval set in `docs/EVAL-PLAN.md` on photos of the finished
+  job and publish every result, misses included.
+- A "what do I even need to do?" mode — the jobs a first-year homeowner doesn't
+  know exist (condensate line, dryer vent, water-heater valve), proposed as small
+  photo-verified jobs instead of a checklist to read.
+- Job state in S3 instead of the instance's `/tmp`, so a job survives a restart of
+  the hosted app.
+- Ask / re-plan mid-job: today the plan is fixed when the job starts, and questions
+  only work in the chat mode, not in the web UI.
+- Segmentation instead of a bounding box, so "this cable, not that one" is exact
+  rather than a soft highlight.
+- Tighter IAM for the hosted agent, and sign-in on the public URL.
 
 ## Status
 
 | Piece | Status |
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
-| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`, 95 tests passing (`python -m pytest -q`) |
+| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → **95 passed, 1 skipped** (the skip is the one test that needs live AWS credentials) |
 | Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/` |
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
-| Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/` |
-| Docker image | ✅ Builds locally (`docker build .`) |
-| Deploy (live URL) | ⏳ Pending — see `docs/DEPLOY.md` |
-| Submission video | ⏳ Pending |
+| Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
+| Full 12-step eval set (`docs/EVAL-PLAN.md` §2, red-team R1–R6) | ⛔ Not run — waiting on evidence photos from the finished job |
+| Deploy — phone web app | ✅ Live on AWS App Runner: <https://w7ihmvgxxj.us-east-1.awsapprunner.com> (`/healthz` 200) |
+| Deploy — Guide agent on Amazon Bedrock AgentCore Runtime | ✅ `stepspotter_guide` READY — see `docs/DEPLOY.md` |
 
 ## Setup
 
@@ -183,8 +218,12 @@ polite.
 git clone <this repo>
 cd stepspotter
 python3.12 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev,agentcore]"
 ```
+
+The `agentcore` extra carries `bedrock-agentcore`, which the AgentCore entrypoint
+imports; without it `pytest` stops at collection on `tests/test_agentcore_entry.py`.
+Nothing in that extra calls AWS on import.
 
 Bedrock creds — export **in the same shell command** you run the app with; an
 ambient `~/.aws/credentials` for a different account otherwise produces a
@@ -235,10 +274,12 @@ python spikes/spike_gate.py              # Live gate integration run
 
 This is a DIY helper for low-voltage, low-consequence work — network cabling,
 low-voltage panels, simple hardware swaps. **It is not for mains electrical work
-inside a breaker panel, gas lines, roofing, or structural work.** Left unbuilt on
-purpose: the safety fork that should refuse to plan those jobs at all and tell you
-to call a professional instead. Until that exists, treat this as a tool for the
-kind of job you'd already be comfortable doing with a good YouTube video and a
+inside a breaker panel, gas lines, roofing, or structural work.** The Planner has a
+safety fork for exactly those: it answers `safety_class="vendor_required"`, returns
+an empty step list and a plain reason instead of a plan
+(`src/stepspotter/planner.py:26-35, 95-98`; `tests/test_web.py::test_vendor_required_returns_no_steps`).
+That fork is a model judgment, not a certified hazard classifier, so treat this as a
+tool for the kind of job you'd already be comfortable doing with a good video and a
 multimeter — nothing that can shock, burn, or collapse on you.
 
 ## Disclosure

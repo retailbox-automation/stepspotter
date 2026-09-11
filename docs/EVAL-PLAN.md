@@ -5,11 +5,27 @@ done until your own photo proves it.* This doc defines a number a stranger can
 reproduce that checks that claim, built around one real repair job, plus a
 red-team set built to try to fool the gate.
 
-**Status: plan only.** The Planner/Verifier/Gate core is not built yet (see repo
-`README.md` checklist). Fixtures, commands and file layout below are the target
-shape; anything not yet real is marked `TODO`. Spike A (`spikes/SPIKE-A-RESULT.md`)
-and Spike B (`spikes/SPIKE-B-RESULT.md`) are the two pieces of ground truth this
-plan is built on — read them first if a claim here needs checking.
+**Status, 11 Sep 2026 — what is real and what is not.** The Planner, Verifier, Gate
+and the eval harness are built and shipped (`src/stepspotter/`, `python -m pytest -q`
+→ 95 passed, 1 skipped). One fixture is checked in and has been run live against
+Bedrock: `fixtures/onq-keystone-smoke/` — **3 steps and 3 red-team cases**, published
+with its trace at [`docs/eval-results/2026-09-09.md`](eval-results/2026-09-09.md).
+
+**The 12 steps in §2 and red-team rows R1–R6 in §4 have NOT been run.** They are the
+target set, and they need evidence photos from the finished job, which do not exist
+yet. Nothing in this document should be read as a result until it appears in
+`docs/eval-results/`. Spike A (`spikes/SPIKE-A-RESULT.md`) and Spike B
+(`spikes/SPIKE-B-RESULT.md`) are the two pieces of ground truth the plan is built on —
+read them first if a claim here needs checking.
+
+| Row | Built? | Run? |
+|---|---|---|
+| Harness (`stepspotter eval`, exit code, report writer) | yes | yes |
+| Smoke fixture: 3 steps, red-team R1/R2/R3-equivalent | yes | yes — 3/3 and 3/3, `--repeat 1`, 9 Sep 2026 |
+| §2 steps 1–12 on the real job | fixture not shot | no |
+| §4 red-team R4 (no photo) | covered by a unit test, `tests/test_gate.py::test_advance_without_verdict_is_cancelled` | not as an eval fixture |
+| §4 red-team R5 (hazard → escalate) | covered by unit tests, `tests/test_gate.py::test_stop_condition_escalates_to_a_human_via_interrupt` and `tests/test_web.py::test_hazard_photo_stops_the_run_as_an_interrupt` | not as an eval fixture |
+| §4 red-team R6 (blurry) | no fixture | no |
 
 ## 1. The real job
 
@@ -158,14 +174,12 @@ non-zero if any step or any red-team case did not match its expected outcome on 
 repeat run** — a red-team miss is a release blocker, not a footnote, and this is
 enforced by the exit code, not just visible in the report.
 
-Verified live against Bedrock on 2026-09-09 (`docs/eval-results/2026-09-09.json`):
-2/3 smoke steps confirmed on the first run, all 3 on a repeat matched the fixture's
-own hand-written evidence text closely enough; the one miss (step 3, "port labels
-legible" against a wide archive photo with a cable crossing the frame) is a genuine,
-reproducible Verifier "not clearly visible" refusal — published, not smoothed away,
-per this document's own §5 rule. All 3 red-team cases (R1 wrong photo, R2 evidence
-absent, R3 no photo) were rejected on both runs of a `--repeat 2` pass, 100% boolean
-agreement across the whole set that run.
+Verified live against Bedrock. The published artifact
+(`docs/eval-results/2026-09-09.json`, `generated_at 2026-09-09T15:17:40+00:00`,
+`repeat: 1`) records **3/3 smoke steps confirmed, 3/3 red-team cases rejected (R1
+wrong photo, R2 evidence absent, R3 no photo), 100% agreement, overall PASS**. That
+`.md`/`.json` pair is the only eval result this repository claims; the numbers here
+are copied from it rather than from memory of a run.
 
 Offline coverage (`tests/test_evalharness.py`, no AWS needed): the summary math, that
 a red-team case the (stub) Verifier is fooled by is reported as a FAILED case and

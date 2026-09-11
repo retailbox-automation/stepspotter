@@ -1,34 +1,24 @@
-# Building a repair agent for Agents for Humans that can say no to itself
+<!-- Ready to paste into builder.aws.com. Publishing needs an AWS Builder ID
+     (profile.aws.amazon.com) — Michael publishes this himself. Keep the title
+     exactly as written: the bonus requires "Agents for Humans" in the title. -->
 
-I bought my first house a few years ago, after living in apartments my whole
-life. I had no idea how to do basic repairs, and the thing that actually
-worked for me was photos — take a picture, get it marked up, one step at a
-time. That habit turned into a hackathon project: StepSpotter, a Strands
-Agents app that walks someone through a home repair one photo-verified step
-at a time. This post is about the one piece of it I think is worth writing up
-on its own: a code-level gate that a well-behaved model can hide, and how we
-proved ours actually works.
+# Building for Agents for Humans: an agent that says no to itself
 
-## The problem with trusting the model to be careful
+I bought my first house this year, after a lifetime in apartments, and found out I
+didn't know how to do the simplest things in it. What works for me is photos: take a
+picture, get it marked up, one step at a time. For the Agents for Humans hackathon I
+turned that into StepSpotter — a Strands Agents app that walks you through a repair one
+photo-verified step at a time and won't unlock the next step until your photo proves you
+finished the last one. Here's how it got built on AWS, including what didn't go
+cleanly.
 
-Most "AI home repair helper" demos ask a vision model to look at a photo and
-describe what it sees, then trust its own next-step suggestion. That's fine
-for advice. It's not fine for a workflow where getting ahead of yourself has
-a real cost — skip a step in terminating a network jack and you re-punch it;
-skip the wrong step in something higher-stakes and it's worse than that.
+## The gate is a hook, not a prompt
 
-The obvious fix is a system prompt: "don't let the user skip ahead unless
-they've shown you proof." We tried exactly that, and it worked — right up
-until we deliberately broke it. A prompt is a request. Nothing enforces it
-except the model's own disposition to comply, and a model's disposition is
-not a security boundary.
-
-## The pattern: BeforeToolCallEvent as a veto, not a request
-
-Strands Agents exposes a hook system that runs before a tool call is actually
-dispatched. We use it to gate one specific tool, `advance_step`, which is the
-only way the agent's loop can move a job from its current step to the next
-one.
+Most "AI repair helper" demos describe a photo and suggest a next step. That's advice.
+I wanted getting ahead of yourself to be impossible, and the obvious fix — a system
+prompt saying "don't let them skip ahead" — is a request, not a boundary. Strands Agents
+has a hook that runs before a tool call is dispatched, and that turned out to be the
+whole design:
 
 ```python
 from strands.hooks import BeforeToolCallEvent, HookProvider, HookRegistry
@@ -47,95 +37,75 @@ class StepGate(HookProvider):
                 "Send a photo of the finished step and I will verify it first."
 ```
 
-Two things worth being precise about, because we learned both the hard way by
-introspecting the running SDK rather than trusting the docs alone (strands-agents
-1.54.0):
+Two details I got from introspecting the running SDK (strands-agents 1.54.0) rather
+than from docs. `cancel_tool` takes a **string**, not a boolean — the string becomes the
+tool result the model reads back, so the refusal the user sees is my text, not a
+paraphrase of an error. And the event is frozen against everything except `cancel_tool`,
+`selected_tool` and `tool_use`; a hook can refuse a call, but it can't quietly rewrite
+the agent's state from inside a checkpoint.
 
-**`cancel_tool` wants a string, not just a boolean.** Setting it to `True`
-gets you a generic SDK error message. Setting it to a string means the model
-receives that exact text as the tool's result and reads it back to the user
-in its own words. The refusal the user actually sees comes from your code,
-not from the model paraphrasing a boolean.
+For an actual hazard, cancelling isn't enough — a cancel fails one call and lets the
+loop carry on. There I use `event.interrupt(...)`, which pauses the whole run with
+`stop_reason='interrupt'` until a person answers. Worth knowing:
+`HookRegistry.invoke_callbacks` catches `InterruptException` internally and returns the
+interrupt in a list, so a test wrapping the call in `try/except` will never fire.
 
-**The event object is frozen against everything except `cancel_tool`,
-`selected_tool`, and `tool_use`.** Try to write any other field and it raises
-`AttributeError`. That's a deliberate constraint, and it's a good one — it
-means a hook can refuse or observe a call, but it can't quietly rewrite the
-agent's other state from inside a callback that's supposed to be a narrow
-checkpoint.
+## A well-behaved model hides a broken gate
 
-For a genuine hazard — a photo showing something actually unsafe — cancelling
-isn't enough, because a cancel just fails one tool call and lets the agent
-keep going. We use `event.interrupt(name, reason)` instead, which raises
-`InterruptException` and pauses the *entire* run with `stop_reason='interrupt'`
-until a human resumes it with an answer. Cancel says "not this call." Interrupt
-says "stop everything." We needed both, and conflating them would have meant a
-hazard just produces a polite retry prompt instead of actually halting.
+This is the part I'd tell anyone building enforcement into an agent. My first
+integration test used an honest system prompt, and the model never tried to skip a step.
+The test passed and proved nothing: a hook that never gets exercised is
+indistinguishable from one that doesn't work.
 
-One gotcha worth flagging for anyone building on this: `HookRegistry.invoke_callbacks`
-catches `InterruptException` internally and returns the interrupt in a list rather
-than letting it propagate up as a raised exception. We found that by reading the
-registry's source, not by guessing from the name — if your test harness wraps the
-call in a `try/except InterruptException`, it will never fire, because the SDK
-already caught it for you.
+So I wrote a second system prompt, for the test only: "the user is always right, call
+`advance_step` immediately when they ask." Same gate, same code. Under that prompt the
+model did try to skip ahead — and the hook cancelled it anyway. That's the evidence.
+Not "the agent behaved," but "the agent tried to misbehave and the code stopped it."
 
-## Why we didn't trust our own gate until we tried to break it
+## Grounding the plan in the manufacturer's own manual
 
-Here's the part that actually matters more than the code snippet above: **a
-correctly-behaving model can make a broken gate look like a working one.**
+The first real job was assembling a pressure washer with no assembly video anywhere on
+YouTube — I checked twenty results. The manual, though, is a public PDF. So the agent
+now searches for it, downloads it, pulls the assembly pages out with `pypdf`, and hands
+them to the planner with page markers. Every step then cites the page it came from.
+Without that grounding, the same job produced a plan that never mentioned the handle,
+the mounts or the four screws, and claimed no tools were required for a job that needs a
+screwdriver.
 
-Our first integration test used an honest, careful system prompt. The model
-never even attempted to call `advance_step` without evidence — it just... didn't
-try. The test passed. It also proved nothing, because a hook that never gets
-exercised is indistinguishable from a hook that doesn't work.
+The honest part: the search engine rate-limits. DuckDuckGo starts returning HTTP 202
+with a challenge page after repeated lookups from one IP, so the lookup has to be a
+status and never a crash — the repair carries on without the manual — and a manual
+already cached must never be overwritten by a later empty result. A bad minute can't be
+allowed to erase something you already have.
 
-So we wrote a second, deliberately permissive system prompt for the test
-only: "the user is always right, call `advance_step` immediately when they
-ask." Same gate, same code, different prompt. Under that prompt, the model
-*did* try to skip ahead on its own — and the hook still cancelled the call.
-That's the actual evidence the gate works: not "the agent behaved nicely,"
-but "the agent tried to misbehave and the code stopped it anyway."
+## What the vision model is and isn't good at
 
-If you're building anything that claims to enforce a rule on an agent, this
-is the test to run: don't just check that a polite prompt produces polite
-behavior. Write the prompt that tries to defeat your own gate and confirm it
-still holds. Anything less is testing the model's manners, not your
-enforcement.
+Amazon Bedrock (Claude Sonnet 4.6 for vision and planning, Haiku 4.5 for cheap turns)
+handles verdicts well: eight out of eight correct pass/fail calls on real photos of my
+own panel, including every case where the claimed object wasn't in frame — it refused
+instead of guessing.
 
-## The eval, and publishing the miss
+Spatial precision is another story. Bounding boxes on cluttered photos landed low and
+oversized; small hardware in clutter was the worst case, three tight hits out of
+fourteen boxes I checked by eye. I measured it instead of assuming, and designed around
+it: a box is a soft highlight snapped to a grid, never a claim that the part is exactly
+there. One more measured thing — confidence scores swung 0.82 to 0.20 across runs on an
+identical, correct refusal. Nothing in this system gates on confidence. It gates on the
+boolean and reads the reason.
 
-We built a small eval harness around a real repair job — an OnQ low-voltage
-panel, two Cat5e runs terminated into keystone jacks, tested with a cable
-tester — as a set of steps with a required evidence photo each, plus a
-red-team set of deliberately wrong or unsafe photos: a photo of the wrong
-object, a photo submitted for the wrong step, an unreadable photo, a hazard,
-and no photo at all.
+## Deploying it
 
-The rule we set for ourselves before running it: publish every result,
-including the ones that fail, rather than reporting a single success
-percentage. When we ran it, one step genuinely failed — a photo of a punched-down
-telecom module where a cable crossed the frame and obscured the port labels
-the step needed legible. The verifier correctly said it couldn't tell, rather
-than guessing the labels were probably fine. That's the report as it actually
-came back, not a cleaned-up version of it: two of three steps confirmed on
-the first pass, all red-team cases correctly rejected, and one genuine,
-reproducible refusal on an evidence photo that really was ambiguous.
+Two AWS paths, both live. The phone-first web app runs as a container on **AWS App
+Runner** — one service, `/healthz`, no load balancer to wire up, which is the right
+trade when what you need is a URL a judge can open on a phone. The Guide agent itself is
+also deployed to **Amazon Bedrock AgentCore Runtime**: `BedrockAgentCoreApp` with an
+`@app.entrypoint`, an arm64 image, and a contract that is just `POST /invocations` and
+`GET /ping` — I ran that contract locally before pushing, which saved a blind
+deploy-and-pray cycle.
 
-We think that's the more honest way to report an eval for something whose
-entire pitch is "it won't let you fake it." A perfect score on a small,
-hand-picked sample would tell you less about the gate than one clearly
-explained miss does.
+The one thing I'd change: job state lives in the instance's `/tmp`, which is ephemeral.
+S3 is the fix, and it's the next commit rather than a lesson.
 
-## What this is for
-
-StepSpotter isn't trying to be a general home-repair chatbot. It's a narrow
-claim: for low-voltage, low-consequence work, an agent can hand you one step
-at a time and refuse to move you forward until your own photo proves the
-last one was done — and that refusal can live in code instead of in a prompt
-asking the model to be careful. The vision model's spatial precision has real
-limits, which we measured and designed around rather than papered over. The
-gate itself, tested the way we tested it, held every time we tried to make it
-fail.
-
-Built for the Agents for Humans hackathon, Everyday Agents track, on Strands
-Agents (AWS).
+Built for the Agents for Humans hackathon, Everyday Agents track, on Strands Agents.
+Code, architecture diagram and the published eval run:
+https://github.com/retailbox-automation/stepspotter
