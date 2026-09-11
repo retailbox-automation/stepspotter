@@ -184,11 +184,11 @@ buttons go straight to the rear camera. `/healthz` returns `{"ok":true,...}`.
 git clone https://github.com/retailbox-automation/stepspotter && cd stepspotter
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-python -m pytest -q                            # 98 passed, 5 skipped
+python -m pytest -q                            # 171 passed, 8 skipped
 stepspotter research "Westinghouse ePX3030"    # finds the maker's manual, offline
 ```
 
-Install `".[dev,agentcore]"` instead and it is 111 passed, 4 skipped. Those counts come from
+Install `".[dev,agentcore]"` instead and it is 184 passed, 7 skipped. Those counts come from
 a real fresh clone, and every skip names its own reason under `pytest -rs`.
 
 With Bedrock credentials exported in the same shell command, `stepspotter serve` runs the

@@ -7,7 +7,7 @@ red-team set built to try to fool the gate.
 
 **Status, 11 Sep 2026 — what is real and what is not.** The Planner, Verifier, Gate
 and the eval harness are built and shipped (`src/stepspotter/`, `python -m pytest -q`
-→ 141 passed, 1 skipped). One fixture is checked in and has been run live against
+→ 190 passed, 1 skipped). One fixture is checked in and has been run live against
 Bedrock: `fixtures/onq-keystone-smoke/` — **3 steps and 3 red-team cases**, published
 with its trace at [`docs/eval-results/2026-09-09.md`](eval-results/2026-09-09.md).
 
