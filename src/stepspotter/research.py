@@ -747,6 +747,7 @@ def _load_cached(product: str) -> tuple[Research | None, str]:
     would go out to a search engine every time. The copy baked into the image cannot
     be rate-limited because it never leaves the machine.
     """
+    fallback: tuple[Research, str] | None = None
     for name, directory in manuals_dirs():
         path = directory / f"{slug(product)}.json"
         try:
@@ -758,8 +759,15 @@ def _load_cached(product: str) -> tuple[Research | None, str]:
         origin = res.source or "an earlier run"
         res.trail = [f"{name}: read from {path.name} (originally found via {origin})"]
         res.source = name
-        return res, name
-    return None, ""
+        # A manual beats the absence of one, wherever each is sitting. Without this,
+        # one lookup during a rate-limited minute writes not_found into the writable
+        # cache and that file then hides the manual baked into the image for the whole
+        # life of the container — the exact silent degradation this ladder exists for.
+        if res.status == "found":
+            return res, name
+        if fallback is None:
+            fallback = (res, name)
+    return fallback if fallback is not None else (None, "")
 
 
 def _store_cached(res: Research) -> None:

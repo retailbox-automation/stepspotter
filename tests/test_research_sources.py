@@ -420,3 +420,24 @@ def test_a_host_that_never_answers_is_still_status_zero(monkeypatch):
     assert research.fetch("https://html.duckduckgo.com/html/?q=x") == (0, "")
     _hits, why = research.search_ddg("anything")
     assert "no answer at all" in why
+
+
+def test_a_cached_miss_never_hides_the_manual_baked_into_the_image(bundled):
+    """One lookup in a rate-limited minute must not blind the container for good.
+
+    ``_store_cached`` writes a not_found when nothing better is on disk, and the
+    writable cache is read before the bundled one — so without an explicit rule the
+    miss file would shadow the shipped manual on every later request.
+    """
+    bake(bundled, "Westinghouse ePX3030")
+    miss = research.Research(
+        product="Westinghouse ePX3030", status="not_found", note="a bad minute"
+    )
+    path = research.cache_path("Westinghouse ePX3030")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(miss.model_dump_json(indent=2))
+
+    found = research_product(TASK, search_fn=exploding_search)
+
+    assert found.status == "found"
+    assert found.source == "bundled"
