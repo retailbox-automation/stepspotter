@@ -54,7 +54,7 @@ Both images are built and pushed as of 2026-09-09: the web image runs on App Run
 (`--platform linux/amd64`) and the Guide image runs on AgentCore Runtime
 (`--platform linux/arm64`, `Dockerfile.agentcore`). See **What is deployed right now**.
 
-## What is deployed right now (2026-09-09)
+## What is deployed right now (2026-09-11)
 
 Both halves are live in **us-east-1**, account `7620****7428`, paid from the hackathon
 AWS credits. Everything below was read back from AWS with `describe`/`get` calls, not
@@ -63,9 +63,9 @@ from the exit code of the command that created it.
 | What | Name / id | Where |
 |---|---|---|
 | Web UI (phone-first) | App Runner service `stepspotter` | **https://w7ihmvgxxj.us-east-1.awsapprunner.com** |
-| Guide agent | AgentCore Runtime `stepspotter_guide`, id `stepspotter_guide-Af1MWv8fnL`, version 1 | `arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL` |
-| Web image | ECR `stepspotter:web` — linux/amd64, 125.6 MB, `sha256:833d2f07…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
-| Guide image | ECR `stepspotter-agentcore:guide` — linux/arm64, `sha256:c5098995…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore` |
+| Guide agent | AgentCore Runtime `stepspotter_guide`, id `stepspotter_guide-Af1MWv8fnL`, version 2 | `arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL` |
+| Web image | ECR `stepspotter:web` — linux/amd64, 127.0 MB, `sha256:e0de4935…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
+| Guide image | ECR `stepspotter-agentcore:guide` — linux/arm64, `sha256:14deb1de…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore` |
 | Pull role | IAM `stepspotter-apprunner-ecr-access` (`AWSAppRunnerServicePolicyForECRAccess`, trusts `build.apprunner.amazonaws.com`) | IAM |
 | Container role | IAM `stepspotter-apprunner-instance` (inline `stepspotter-bedrock-invoke`, trusts `tasks.apprunner.amazonaws.com`) | IAM |
 | Runtime role | IAM `stepspotter-agentcore-execution` (inline `stepspotter-agentcore-runtime`, trusts `bedrock-agentcore.amazonaws.com`) | IAM |
@@ -77,6 +77,70 @@ from the exit code of the command that created it.
 Bedrock through a role: `AWS_ACCESS_KEY_ID` is unset in App Runner's environment, and
 the first live job on that URL planned nine steps off a real photo — which only works
 if `bedrock:InvokeModel` reached the model through `stepspotter-apprunner-instance`.
+
+## Redeploy of 2026-09-11 — and how to undo it
+
+The merge of the manual-research work (baked manual cache, five-source ladder) was
+pushed to both deployments on 2026-09-11. Both images are pulled by a **mutable tag**
+(`:web`, `:guide`), so a push replaces what the tag points at. Before pushing, the
+previous digests were given their own permanent tags, because "roll back" is worthless
+if the old image is only reachable by a digest nobody wrote down:
+
+| | Previous (rollback point) | Now live |
+|---|---|---|
+| `stepspotter:web` | `sha256:833d2f07…`, also tagged **`web-rollback-20260911`** | `sha256:e0de4935…` |
+| `stepspotter-agentcore:guide` | `sha256:c5098995…`, also tagged **`guide-rollback-20260911`** | `sha256:14deb1de…` |
+| AgentCore Runtime version | 1 | 2 |
+
+Neither repository has a lifecycle policy, so the old images do not expire.
+
+To roll back, re-point the tag at the old digest and redeploy — no rebuild:
+
+```bash
+# web: retag the rollback digest back onto :web, then redeploy the service
+MAN=$(aws ecr batch-get-image --repository-name stepspotter \
+        --image-ids imageTag=web-rollback-20260911 --query 'images[0].imageManifest' --output text)
+aws ecr put-image --repository-name stepspotter --image-tag web --image-manifest "$MAN" \
+  --image-manifest-media-type application/vnd.docker.distribution.manifest.v2+json
+aws apprunner start-deployment --service-arn <service arn>
+
+# guide: same, then update the runtime (it makes a new version pointing at the old image)
+MAN=$(aws ecr batch-get-image --repository-name stepspotter-agentcore \
+        --image-ids imageTag=guide-rollback-20260911 --query 'images[0].imageManifest' --output text)
+aws ecr put-image --repository-name stepspotter-agentcore --image-tag guide --image-manifest "$MAN" \
+  --image-manifest-media-type application/vnd.docker.distribution.manifest.v2+json
+aws bedrock-agentcore-control update-agent-runtime --agent-runtime-id stepspotter_guide-Af1MWv8fnL ...
+```
+
+### What was checked after the push (failures, not successes)
+
+Error counts were taken **before** the deploy and again after, so "after" had something
+to compare against. Both windows: **0 Traceback, 0 ERROR, 0 Timeout, 0 5xx, 0 Exception**
+across `/aws/apprunner/.../application`, `.../service` and the AgentCore log group —
+190 requests logged, every one a 200. Nothing was rolled back.
+
+What was proven, rather than assumed:
+
+* **The new code is actually serving** — the deployed HTML contains `researchLine` and
+  the string `No manual found, so these steps come from the photo alone`, which exist
+  only in this build. A `/healthz` 200 alone would not have shown that.
+* **The baked cache answers on App Runner, with no search engine.** A live job for
+  *assemble Westinghouse ePX3030 pressure washer* planned 10 steps in 30 s and the card
+  read **"Manual found via the copy baked into the image (no network) — pages 10, 11,
+  12, 13, 14"**, `research.source = "bundled"`. That is the DuckDuckGo rate-limit risk
+  closed on the hosted service, not just locally.
+* **The gate still refuses, and still lets through.** On a job whose step 1 wanted
+  labelled cables, two wrong photos were rejected and `POST /advance` — called directly,
+  going around the hidden button — returned `blocked:true` and wrote a `gate_block` row.
+  On a second job, a correct panel photo produced `passed:true`, the button appeared, and
+  the click moved the job to step 2 of 8 (`advance` in the trace).
+* **AgentCore v2 answers**, `statusCode` 200 in 6.6 s, and resolves the ePX3030 manual to
+  pages 10–14 from the same baked excerpt.
+
+Offline behaviour was checked in both images before either was pushed: the known model
+resolves with `source: bundled` under `--network none`, and an unknown model
+(`APC BX1350M`) returns `not_found` with the full trail — the control that shows the
+probe can actually fail.
 
 ## Path A — AWS App Runner (the judges' URL)
 

@@ -226,8 +226,8 @@ polite.
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
 | Full 12-step eval set (`docs/EVAL-PLAN.md` §2, red-team R1–R6) | ⛔ Not run — waiting on evidence photos from the finished job |
-| Deploy — phone web app | ✅ Live on AWS App Runner: <https://w7ihmvgxxj.us-east-1.awsapprunner.com> (`/healthz` 200) |
-| Deploy — Guide agent on Amazon Bedrock AgentCore Runtime | ✅ `stepspotter_guide` READY — see `docs/DEPLOY.md` |
+| Deploy — phone web app | ✅ Live on AWS App Runner: <https://w7ihmvgxxj.us-east-1.awsapprunner.com> (`/healthz` 200). Redeployed 2026-09-11 with the baked manual cache — a live ePX3030 job on that URL cites *"the copy baked into the image (no network)"*, so the demo does not depend on a search engine |
+| Deploy — Guide agent on Amazon Bedrock AgentCore Runtime | ✅ `stepspotter_guide` READY, version 2 (2026-09-11) — invoked live, resolves the ePX3030 manual to pages 10–14 from the baked excerpt; see `docs/DEPLOY.md` |
 
 ## Setup
 
