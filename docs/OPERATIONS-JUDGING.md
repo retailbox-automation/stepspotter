@@ -9,9 +9,9 @@ This file is the part nobody writes until it has already gone wrong: what can br
 **who finds out**, and what to do about it. The deploy mechanics — build, push, roll
 back — stay in [DEPLOY.md](DEPLOY.md); this is the operating half.
 
-Live URL: **https://w7ihmvgxxj.us-east-1.awsapprunner.com** · account `762071317428`,
+Live URL: **https://w7ihmvgxxj.us-east-1.awsapprunner.com** · account `7620****7428`,
 `us-east-1` · App Runner service `stepspotter`
-(`arn:aws:apprunner:us-east-1:762071317428:service/stepspotter/cee52fc66d5a4e23b40a9088eed84725`).
+(`arn:aws:apprunner:us-east-1:7620****7428:service/stepspotter/cee52fc66d5a4e23b40a9088eed84725`).
 
 > **State of play.** The alarms, the SNS topic and its confirmed subscription are live
 > on the account **now**. The request caps and the kill switch are code — they start
@@ -36,7 +36,7 @@ without an owner is §5, and it is stated rather than quietly left out.
 
 ### The alerts, concretely
 
-* **SNS topic** `arn:aws:sns:us-east-1:762071317428:stepspotter-alerts`
+* **SNS topic** `arn:aws:sns:us-east-1:7620****7428:stepspotter-alerts`
 * **Subscription** — `admin@retailbox-automation.com`, protocol `email`, state
   **confirmed** (`arn:…:stepspotter-alerts:6ae859a3-5f0d-4334-a880-c651b5891876`).
   A mailbox, deliberately: not a banner on a Mac that may be shut.
@@ -164,8 +164,8 @@ passes, finished jobs still read back; starting a job or checking a photo return
 
 ```bash
 # takes effect after the deployment finishes — about 3 minutes
-aws apprunner update-service --service-arn arn:aws:apprunner:us-east-1:762071317428:service/stepspotter/cee52fc66d5a4e23b40a9088eed84725 \
-  --source-configuration '{"ImageRepository":{"ImageIdentifier":"762071317428.dkr.ecr.us-east-1.amazonaws.com/stepspotter:web","ImageRepositoryType":"ECR","ImageConfiguration":{"Port":"8080","RuntimeEnvironmentVariables":{"AWS_DEFAULT_REGION":"us-east-1","AWS_REGION":"us-east-1","PORT":"8080","STEPSPOTTER_DATA":"/tmp/stepspotter","STEPSPOTTER_PAUSED":"1"}}},"AuthenticationConfiguration":{"AccessRoleArn":"arn:aws:iam::762071317428:role/stepspotter-apprunner-ecr-access"},"AutoDeploymentsEnabled":false}'
+aws apprunner update-service --service-arn arn:aws:apprunner:us-east-1:7620****7428:service/stepspotter/cee52fc66d5a4e23b40a9088eed84725 \
+  --source-configuration '{"ImageRepository":{"ImageIdentifier":"7620****7428.dkr.ecr.us-east-1.amazonaws.com/stepspotter:web","ImageRepositoryType":"ECR","ImageConfiguration":{"Port":"8080","RuntimeEnvironmentVariables":{"AWS_DEFAULT_REGION":"us-east-1","AWS_REGION":"us-east-1","PORT":"8080","STEPSPOTTER_DATA":"/tmp/stepspotter","STEPSPOTTER_PAUSED":"1"}}},"AuthenticationConfiguration":{"AccessRoleArn":"arn:aws:iam::7620****7428:role/stepspotter-apprunner-ecr-access"},"AutoDeploymentsEnabled":false}'
 aws apprunner describe-service --service-arn <arn> --query 'Service.Status'   # RUNNING again = live
 curl -s -o /dev/null -w '%{http_code}\n' -X POST https://w7ihmvgxxj.us-east-1.awsapprunner.com/api/jobs  # expect 503
 ```
@@ -266,7 +266,7 @@ Three ways to close it. Two cost money, so they are Mikhail's call, not the lane
    `stepspotter/data/watch/healthz-watch.sh`, in place of the `: # no-op`:
    ```bash
    aws sns publish --region us-east-1 \
-     --topic-arn arn:aws:sns:us-east-1:762071317428:stepspotter-alerts \
+     --topic-arn arn:aws:sns:us-east-1:7620****7428:stepspotter-alerts \
      --subject "StepSpotter healthz failing x$n" \
      --message "$ts last=$http  https://w7ihmvgxxj.us-east-1.awsapprunner.com/healthz"
    ```
@@ -297,5 +297,5 @@ plus:
 
 ```bash
 aws cloudwatch delete-alarms --alarm-names stepspotter-5xx stepspotter-request-flood
-aws sns delete-topic --topic-arn arn:aws:sns:us-east-1:762071317428:stepspotter-alerts
+aws sns delete-topic --topic-arn arn:aws:sns:us-east-1:7620****7428:stepspotter-alerts
 ```
