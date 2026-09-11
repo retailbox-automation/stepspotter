@@ -318,13 +318,23 @@ class Limiter:
 
 
 def bucket_for(method: str, path: str) -> str | None:
-    """Which counter a request belongs to, or ``None`` for the free routes."""
-    if method != "POST" or not path.startswith("/api/jobs"):
+    """Which counter a request belongs to, or ``None`` for the free routes.
+
+    The demo routes count as the real thing on purpose. ``POST /api/demo/jobs`` and
+    ``POST /api/jobs/<id>/demo-photo`` (the no-camera path on the judge-mode branch)
+    swap the *photo* for one shipped in the package — the Planner and the Verifier they
+    call are the same Bedrock calls at the same price. A button every judge presses is
+    the last endpoint that should be outside the caps, so it is matched here even before
+    those routes land: a path that does not exist is simply never asked about.
+    """
+    if method != "POST":
         return None
     tail = path.rstrip("/")
-    if tail == "/api/jobs":
+    if tail in ("/api/jobs", "/api/demo/jobs"):
         return JOBS
-    if tail.endswith("/photo"):
+    if not tail.startswith("/api/jobs/"):
+        return None
+    if tail.endswith("/photo") or tail.endswith("/demo-photo"):
         return PHOTOS
     return None
 

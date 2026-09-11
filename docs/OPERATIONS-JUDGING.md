@@ -74,6 +74,10 @@ has never fired is indistinguishable from one that is broken.
 | New jobs per UTC day, whole service | 150 | `STEPSPOTTER_MAX_JOBS_PER_DAY` |
 | Photo checks per UTC day, whole service | 300 | `STEPSPOTTER_MAX_PHOTOS_PER_DAY` |
 
+The **demo button counts as the real thing**: it swaps the photo, not the model, so
+`POST /api/demo/jobs` is metered as a job and `POST /api/jobs/<id>/demo-photo` as a
+photo check. It is the endpoint a judge is most likely to press repeatedly.
+
 The address is the first hop of `X-Forwarded-For` (App Runner terminates TLS in front
 of the container). Headers are forgeable — a caller who sends a new one per request
 gets a fresh hourly window every time — so **every endpoint that spends money has a

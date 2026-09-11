@@ -216,6 +216,13 @@ def test_health_and_reads_are_never_limited(monkeypatch):
         ("POST", "/api/jobs", JOBS),
         ("POST", "/api/jobs/job-1/photo", PHOTOS),
         ("POST", "/api/jobs/job-1/photo/", PHOTOS),
+        # The demo button spends exactly what the camera spends: same Planner, same
+        # Verifier, packaged photo instead of a phone. It is metered as the real thing.
+        ("POST", "/api/demo/jobs", JOBS),
+        ("POST", "/api/jobs/job-1/demo-photo", PHOTOS),
+        ("POST", "/api/jobs/job-1/demo-photo/", PHOTOS),
+        ("POST", "/api/demo", None),
+        ("GET", "/api/demo/jobs", None),
         ("POST", "/api/jobs/job-1/advance", None),
         ("POST", "/api/jobs/job-1/escalate", None),
         ("GET", "/api/jobs", None),
