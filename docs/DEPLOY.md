@@ -295,7 +295,7 @@ first try.
 ## What proves it works
 
 ```bash
-PYTHONPATH=src "$PY" -m pytest -q            # 114 passed, 1 skipped (the skip needs AWS)
+PYTHONPATH=src "$PY" -m pytest -q            # 141 passed, 1 skipped (the skip needs AWS)
 ```
 
 `tests/test_web.py` runs the whole browser flow offline with a fake planner and

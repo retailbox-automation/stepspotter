@@ -4,14 +4,18 @@ Endpoints (all JSON except the two image routes and ``/``):
 
     GET  /                          the whole UI, one HTML file, no build step
     GET  /healthz                   liveness for App Runner / a container HEALTHCHECK
+    GET  /api/demo                  is the no-camera demo installed, and what does it say
+    POST /api/demo/jobs             start the demo job on a photo shipped in the package
     POST /api/jobs                  multipart: task + photo  -> plan or vendor refusal
     GET  /api/jobs/{id}             where the job is right now
     GET  /api/jobs/{id}/card        the rendered card image for the current step
     POST /api/jobs/{id}/photo       multipart: photo         -> verifier verdict
+    POST /api/jobs/{id}/demo-photo  the same, on a packaged photo instead of a camera
     POST /api/jobs/{id}/advance     GATED, through the Strands hook (see gated.py)
     POST /api/jobs/{id}/escalate    stop and hand to a person
     GET  /api/jobs/{id}/evidence/N  the photo the person sent for step N
     GET  /api/jobs/{id}/trace       every tool call and refusal, in order
+                                    (?view=human for the readable one, ?view=raw for rows)
 
 Nothing here holds state of its own: the job lives in ``data/jobs/<id>.json`` and
 everything that happened is appended to ``data/jobs/<id>.trace.jsonl`` by the store.
@@ -29,14 +33,25 @@ from stepspotter import store
 from stepspotter.gate import StepGate
 from stepspotter.guide import JobService, build_tools
 from stepspotter.models import JobState
+from stepspotter.web import demo as demo_mod
 from stepspotter.web.gated import advance_via_gate, escalate_via_tool
 from stepspotter.web.page import PAGE_HTML
 from stepspotter.web.photos import save_upload
+from stepspotter.web.trace_view import humanize
 
 
 def _escalated(job_id: str) -> bool:
     """A job is in a person's hands once an escalate event is on its trace."""
     return any(r.get("event") == "escalate" for r in store.read_trace(job_id))
+
+
+def _is_demo(job_id: str) -> bool:
+    """Was this job started from the demo button?
+
+    Read off the trace rather than stored on the job, so ``JobState`` keeps the same
+    shape on disk and a job saved before this existed still loads.
+    """
+    return any(r.get("event") == "demo" for r in store.read_trace(job_id))
 
 
 def _research(job_id: str) -> dict | None:
@@ -92,6 +107,7 @@ def _summary(state: JobState) -> dict:
         "step_number": None if step is None else state.current + 1,
         "done": state.done,
         "escalated": _escalated(state.job_id),
+        "demo": _is_demo(state.job_id),
         "research": _research(state.job_id),
         "step": _step_dict(state),
         "verdict": None
@@ -139,9 +155,12 @@ def create_app(service: JobService | None = None) -> FastAPI:
         return {"ok": True, "service": "stepspotter"}
 
     # ---------------------------------------------------------------- jobs
-    @app.post("/api/jobs")
-    async def create_job(task: str = Form(...), photo: UploadFile = File(...)) -> dict:
-        raw = await photo.read()
+    def _start_job(task: str, raw: bytes) -> JobState:
+        """Plan one job from a task and photo bytes. The only path into the Planner.
+
+        The camera and the demo button both end up here, so a demo cannot quietly
+        become a different code path than the one a phone takes.
+        """
         if not raw:
             raise HTTPException(status_code=400, detail="That photo did not arrive. Try again.")
         if not task.strip():
@@ -161,7 +180,60 @@ def create_app(service: JobService | None = None) -> FastAPI:
             svc.put(state)
         except OSError:
             pass
+        return state
+
+    async def _verify_photo(job_id: str, raw: bytes) -> dict:
+        """Check one photo against the current step. The only path into the Verifier."""
+        state = _job(job_id)
+        if state.done:
+            raise HTTPException(status_code=409, detail="This job is already finished.")
+        if not raw:
+            raise HTTPException(status_code=400, detail="That photo did not arrive. Try again.")
+        step_no = state.current + 1
+        dest = save_upload(raw, store.cards_dir(job_id) / f"evidence-{step_no:02d}.jpg")
+        try:
+            verdict = svc.verify(state, str(dest))
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=502, detail=f"The checker could not answer: {exc}")
+        summary = _summary(state)
+        return {"verdict": summary["verdict"], "job": summary, "raw_passed": verdict.passed}
+
+    @app.post("/api/jobs")
+    async def create_job(task: str = Form(...), photo: UploadFile = File(...)) -> dict:
+        return _summary(_start_job(task, await photo.read()))
+
+    # ---------------------------------------------------------------- demo
+    @app.get("/api/demo")
+    def demo_info() -> dict:
+        """What the first screen needs to offer the demo — or to hide the button."""
+        return demo_mod.info()
+
+    @app.post("/api/demo/jobs")
+    def demo_job() -> dict:
+        """Start the demo job: a packaged photo, then the real Planner, same as a phone."""
+        if not demo_mod.available():
+            raise HTTPException(status_code=503, detail="The demo photos are not installed.")
+        state = _start_job(demo_mod.DEMO_TASK, demo_mod.photo_bytes("start"))
+        # Marks the job for the page (which swaps the camera for two buttons) and puts
+        # the substitution on the record, so the trace never pretends a camera was used.
+        store.trace(
+            state.job_id,
+            "demo",
+            task=demo_mod.DEMO_TASK,
+            photo_source="packaged demo photo, not a camera",
+        )
         return _summary(state)
+
+    @app.post("/api/jobs/{job_id}/demo-photo")
+    async def demo_photo(job_id: str, which: str = Form(...)) -> dict:
+        """Send one of the packaged photos to the real Verifier. No verdict is faked."""
+        if which not in demo_mod.DEMO_BUTTONS:
+            raise HTTPException(status_code=400, detail=f"There is no demo photo called {which!r}.")
+        try:
+            raw = demo_mod.photo_bytes(which)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+        return await _verify_photo(job_id, raw)
 
     @app.get("/api/jobs/{job_id}")
     def get_job(job_id: str) -> dict:
@@ -184,19 +256,7 @@ def create_app(service: JobService | None = None) -> FastAPI:
 
     @app.post("/api/jobs/{job_id}/photo")
     async def submit_photo(job_id: str, photo: UploadFile = File(...)) -> dict:
-        state = _job(job_id)
-        if state.done:
-            raise HTTPException(status_code=409, detail="This job is already finished.")
-        raw = await photo.read()
-        if not raw:
-            raise HTTPException(status_code=400, detail="That photo did not arrive. Try again.")
-        step_no = state.current + 1
-        dest = save_upload(raw, store.cards_dir(job_id) / f"evidence-{step_no:02d}.jpg")
-        try:
-            verdict = svc.verify(state, str(dest))
-        except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=502, detail=f"The checker could not answer: {exc}")
-        return {"verdict": _summary(state)["verdict"], "job": _summary(state), "raw_passed": verdict.passed}
+        return await _verify_photo(job_id, await photo.read())
 
     @app.post("/api/jobs/{job_id}/advance")
     def advance(job_id: str) -> JSONResponse:
@@ -236,11 +296,23 @@ def create_app(service: JobService | None = None) -> FastAPI:
         return FileResponse(str(p), media_type="image/jpeg")
 
     @app.get("/api/jobs/{job_id}/trace")
-    def trace(job_id: str) -> dict:
+    def trace(job_id: str, view: str = "all") -> dict:
+        """The record of what happened.
+
+        ``view=human`` is what the page shows: who did what, what came back, why —
+        and NO filesystem paths, job ids or raw tool inputs, which is all the raw
+        rows are made of. ``view=raw`` is the operator's view, behind an explicit
+        link. The default carries both, because that is what callers written before
+        this parameter existed expect.
+        """
         rows = store.read_trace(job_id)
         if not rows:
             raise HTTPException(status_code=404, detail=f"No trace for {job_id}.")
-        return {"job_id": job_id, "rows": rows}
+        if view == "human":
+            return {"job_id": job_id, "human": humanize(rows)}
+        if view == "raw":
+            return {"job_id": job_id, "rows": rows}
+        return {"job_id": job_id, "rows": rows, "human": humanize(rows)}
 
     return app
 

@@ -23,9 +23,14 @@ src/stepspotter.egg-info/requires.txt
 src/stepspotter.egg-info/top_level.txt
 src/stepspotter/web/__init__.py
 src/stepspotter/web/app.py
+src/stepspotter/web/demo.py
 src/stepspotter/web/gated.py
 src/stepspotter/web/page.py
 src/stepspotter/web/photos.py
+src/stepspotter/web/trace_view.py
+src/stepspotter/web/demo_photos/01-panel-overview.jpg
+src/stepspotter/web/demo_photos/02-panel-inside.jpg
+src/stepspotter/web/demo_photos/04-office-jack-front.jpg
 tests/test_agentcore_entry.py
 tests/test_card.py
 tests/test_cli_plan_output.py
@@ -38,4 +43,6 @@ tests/test_planner_grounding.py
 tests/test_planner_integration.py
 tests/test_research.py
 tests/test_research_sources.py
+tests/test_trace_view.py
 tests/test_web.py
+tests/test_web_demo.py

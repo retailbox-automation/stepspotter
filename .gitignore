@@ -25,3 +25,6 @@ data/manuals/*
 !data/manuals/index.json
 !data/manuals/westinghouse-epx3030.json
 !data/manuals/ryobi-ry31012.json
+
+# setuptools wheel-build scratch (tools/ and the Dockerfile both build out-of-tree)
+build/

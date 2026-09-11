@@ -33,6 +33,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# The three photos behind the "Try a demo job" button. They have to travel with the
+# install: the container copies only src/ and data/manuals/, so anything outside the
+# package is simply not there in production.
+[tool.setuptools.package-data]
+"stepspotter.web" = ["demo_photos/*.jpg"]
+
 [tool.pytest.ini_options]
 markers = ["integration: hits Bedrock; needs AWS credentials"]
 testpaths = ["tests"]
