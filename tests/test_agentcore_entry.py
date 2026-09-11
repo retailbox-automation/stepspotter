@@ -18,7 +18,10 @@ import pytest
 from PIL import Image
 
 from stepspotter import store
-from stepspotter.agentcore_entry import app, handle, invoke
+
+pytest.importorskip("bedrock_agentcore", reason="install the 'agentcore' extra to test the AgentCore door")
+
+from stepspotter.agentcore_entry import app, handle, invoke  # noqa: E402
 from stepspotter.gate import StepGate
 from stepspotter.guide import JobService, build_tools, run_tool_through_gate
 from stepspotter.models import Box, Plan, Step, StepVerdict

@@ -39,7 +39,7 @@ insisting talks it past a step it hasn't seen evidence for.
 
 ## How we built it
 
-Seven roles, named like a small crew rather than software layers:
+Eight roles, named like a small crew rather than software layers:
 
 - **Guide** — the agent you talk to; shows the step card, takes your photo.
 - **Planner** — turns the job + a first photo into an ordered list of steps, each
@@ -52,11 +52,16 @@ Seven roles, named like a small crew rather than software layers:
 - **Researcher** — given a brand and model, finds the manufacturer's manual online
   and pulls out the assembly pages, so the Planner works from the maker's own words
   instead of a guess.
-- **Safety fork** — before any of this starts: is this actually a DIY job, or does
-  it need a professional?
+- **Safety fork** — the Planner's first decision, before it writes a single step: is
+  this actually a DIY job, or does it need a licensed trade? A job that needs a pro
+  comes back with an empty step list and one sentence, not a plan.
+- **Memory** — what this house already has and where we stopped, plus the conversation
+  itself, so closing the phone mid-repair doesn't start the job over.
 
-Full role-by-role breakdown, the Strands feature behind each one, and a diagram:
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+![StepSpotter architecture: the person, the Guide agent, the plan-once roles (safety fork, researcher, planner), the per-step loop (verifier, gate, marker) and the AWS services underneath](docs/architecture.png)
+
+Full role-by-role breakdown, the Strands feature behind each one, and the diagram
+source: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 **Strands Agents** is the SDK end to end: typed `structured_output` for the
 Verifier's verdict (not free-text parsing), and a `BeforeToolCallEvent` hook for
@@ -147,12 +152,23 @@ The eval harness runs every fixture photo through the same `advance_step` / gate
 code path the app itself uses, and exits non-zero if any red-team photo gets past
 the gate on any repeat.
 
-**What has actually been run and published** (`docs/eval-results/2026-09-09.md`,
-live against Bedrock, `--repeat 1`): the checked-in smoke fixture —
-`fixtures/onq-keystone-smoke/`, 3 steps off real photos of my own low-voltage
-panel — **3/3 steps confirmed, 3/3 wrong photos rejected**, 100% boolean agreement.
-The three red-team photos are a front-face jack instead of an open wall box, a
-different room's cabling instead of the panel, and no photo at all.
+**What has actually been run and published** — the checked-in smoke fixture,
+`fixtures/onq-keystone-smoke/`: 3 steps off real photos of my own low-voltage panel,
+plus three red-team photos (a front-face jack instead of an open wall box, a different
+room's cabling instead of the panel, and no photo at all). Both runs were live against
+Bedrock at `--repeat 1`, and both are in the repo with their reasons intact:
+
+| Run | Steps confirmed | Red-team rejected | Overall |
+|---|---|---|---|
+| [`docs/eval-results/2026-09-09.md`](docs/eval-results/2026-09-09.md) | 3/3 | 3/3 | PASS |
+| [`docs/eval-results/2026-09-11.md`](docs/eval-results/2026-09-11.md) | **2/3** | 3/3 | **FAIL** |
+
+The second run is the honest one to read. Step 3 missed: a black cable lay across the
+telecom module and covered the port numbers, so the Verifier refused a step that was
+in fact done — *"the port labels are not fully legible as required."* That is a real
+miss against a real photo, the harness exited non-zero for it, and it is published
+exactly as it came out. The number that did not move either day is the one that
+matters: **6/6 wrong photos rejected across both runs** — nothing got past the gate.
 
 The full target set — the same job written out as 12 steps, red-team rows R1–R6 —
 is specified in [`docs/EVAL-PLAN.md`](docs/EVAL-PLAN.md) and **not yet run**: it
@@ -187,8 +203,12 @@ result we do run gets published with its misses intact.
 - A code-level gate — not a prompt — that a permissive, "just do what they say"
   system prompt could not talk past, proven live against Bedrock, not just in a
   unit test.
-- 8/8 correct pass/fail verdicts on real photos of a real panel, including every
-  case where the claimed object simply wasn't in the frame.
+- 8/8 correct pass/fail verdicts on real photos of a real panel in Spike A,
+  including all four cases where the claimed object simply wasn't in the frame
+  (`spikes/SPIKE-A-RESULT.md` §1 — run twice, identical booleans both times).
+- Two published eval runs against those same photos, 6/6 red-team photos rejected
+  across both, and the one genuine step miss left in the report instead of edited
+  out (`docs/eval-results/`).
 - A named, reasoned failure mode for the one part of the system that isn't
   reliable yet (bounding-box precision), with a concrete mitigation instead of a
   silent gap.
@@ -221,7 +241,7 @@ polite.
 | Piece | Status |
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
-| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → **141 passed, 1 skipped** (the skip is the one test that needs live AWS credentials) |
+| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → from a fresh clone, **111 passed, 4 skipped** with the `agentcore` extra and **98 passed, 5 skipped** without it; on the machine that also holds the raw photo archive, 114 / 1 and 101 / 2 |
 | Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/` |
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
@@ -231,38 +251,58 @@ polite.
 
 ## Setup
 
+**Requires Python 3.12 or newer** — `brew install python@3.12` on macOS, or
+`pyenv install 3.12`, or your distribution's `python3.12` package. Nothing here is
+tested on 3.11 or older.
+
 ```bash
-git clone <this repo>
-cd stepspotter
+git clone https://github.com/retailbox-automation/stepspotter && cd stepspotter
 python3.12 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+python -m pytest -q      # 98 passed, 5 skipped — no AWS account, no credentials, no network
+```
+
+That is the whole cold start, and those numbers are from an actual fresh clone, not
+from this working copy. Each skip says out loud why it skipped (`pytest -q -rs`): one
+needs live AWS credentials, one needs the optional AgentCore SDK, and three render a
+card against the raw photo archive that lives outside this repo — they are the only
+tests in the suite that want a file a stranger doesn't get.
+
+Add the AgentCore door as well if you want those thirteen tests to run too:
+
+```bash
 pip install -e ".[dev,agentcore]"
-```
-
-The `agentcore` extra carries `bedrock-agentcore`, which the AgentCore entrypoint
-imports; without it `pytest` stops at collection on `tests/test_agentcore_entry.py`.
-Nothing in that extra calls AWS on import.
-
-Bedrock creds — export **in the same shell command** you run the app with; an
-ambient `~/.aws/credentials` for a different account otherwise produces a
-`ValidationException: Operation not allowed` that looks like throttling but isn't:
-
-```bash
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_DEFAULT_REGION=us-east-1
-```
-
-Model access on your AWS account must include Anthropic models on Bedrock in
-`us-east-1` — Claude Sonnet 4.6 (`global.anthropic.claude-sonnet-4-6`, the default)
-and Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5`); no separate opt-in was
-needed on the account these spikes ran on.
-
-Run what's real today, offline, no AWS needed:
-
-```bash
-python -m pytest -q                      # 141 passed, 1 skipped — the full suite
+python -m pytest -q                      # 111 passed, 4 skipped from a fresh clone
 python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract on its own
 ```
+
+The `agentcore` extra carries `bedrock-agentcore`, which only the AgentCore
+entrypoint imports; without it `tests/test_agentcore_entry.py` skips itself instead
+of failing collection. Nothing in that extra calls AWS on import.
+
+### If you want the parts that need AWS
+
+Everything above is offline. The web UI, the eval harness and the spikes make real
+Amazon Bedrock calls, and need three things on your account:
+
+1. **Credentials exported in the same shell command** you run the app with. An
+   ambient `~/.aws/credentials` or a stale `AWS_PROFILE` pointing at a different
+   account produces a `ValidationException: Operation not allowed` that reads like
+   throttling but is really the wrong account:
+
+   ```bash
+   export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_DEFAULT_REGION=us-east-1
+   unset AWS_PROFILE      # if you have one set for another account
+   ```
+
+2. **IAM permissions** on that identity: `bedrock:InvokeModel` and
+   `bedrock:InvokeModelWithResponseStream`, in `us-east-1`.
+
+3. **Model access** for Anthropic models in the Bedrock console (*Bedrock → Model
+   access*), in `us-east-1` — Claude Sonnet 4.6 (`global.anthropic.claude-sonnet-4-6`,
+   the default here) and Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5`). Without
+   it you get the same `ValidationException: Operation not allowed`, which is why it
+   is worth ruling out before you go looking for a bug in this repo.
 
 Run the phone-first web UI (needs the AWS export above):
 

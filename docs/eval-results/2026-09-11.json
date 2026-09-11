@@ -1,0 +1,126 @@
+{
+  "generated_at": "2026-09-11T13:02:20+00:00",
+  "fixtures_root": "<repo>/fixtures",
+  "repeat": 1,
+  "summary": {
+    "steps_confirmed": "2/3",
+    "redteam_rejected": "3/3",
+    "all_ok": false
+  },
+  "results": [
+    {
+      "kind": "step",
+      "case_id": "step-1",
+      "job": "onq-keystone-smoke",
+      "target_step": 1,
+      "expected": "pass",
+      "photo": "<repo>/fixtures/onq-keystone-smoke/steps/01-confirm-panel.jpg",
+      "outcomes": [
+        "pass"
+      ],
+      "reasons": [
+        "The open panel clearly shows coax and Cat5e cable runs, a multi-port coax splitter, and a telecom distribution module, with no circuit breakers anywhere in the frame. | Step 2 of 3: Seat the wire pairs into the office jack \u2014 At the office wall box, hold the keystone jack (the small snap-in socket the cable plugs into) out with its faceplate off, and lay the loose coloured wire pairs from the cable against the jack body before punching them down."
+      ],
+      "latencies_s": [
+        8.24
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "step",
+      "case_id": "step-2",
+      "job": "onq-keystone-smoke",
+      "target_step": 2,
+      "expected": "pass",
+      "photo": "<repo>/fixtures/onq-keystone-smoke/steps/02-seat-pairs.jpg",
+      "outcomes": [
+        "pass"
+      ],
+      "reasons": [
+        "The wall box is open with the faceplate off, the keystone jack is held out separately (not snapped into the plate), and the coloured wire pairs (blue, orange, green) are visibly laid into the jack body's punch-down terminals. | Step 3 of 3: Confirm the run lands at the telecom module \u2014 At the panel, confirm the Cat5e run for the office jack is punched down into one of the telecom module's numbered ports."
+      ],
+      "latencies_s": [
+        4.98
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "step",
+      "case_id": "step-3",
+      "job": "onq-keystone-smoke",
+      "target_step": 3,
+      "expected": "pass",
+      "photo": "<repo>/fixtures/onq-keystone-smoke/steps/03-telecom-landing.jpg",
+      "outcomes": [
+        "reject"
+      ],
+      "reasons": [
+        "Wire pairs are punched into the telecom module ports, but a large black cable is blocking most of the port number labels, so the port labels are not fully legible as required. | Blocked: step 3 (Confirm the run lands at the telecom module) did not pass the check. Wire pairs are punched into the telecom module ports, but a large black cable is blocking most of the port number labels, so the port labels are not fully legible as required. Fix that, send a new photo, and we will move on."
+      ],
+      "latencies_s": [
+        6.7
+      ],
+      "agreement_pct": 100.0,
+      "ok": false
+    },
+    {
+      "kind": "redteam",
+      "case_id": "R1",
+      "job": "onq-keystone-smoke",
+      "target_step": 2,
+      "expected": "reject",
+      "photo": "R1-wrong-photo.jpg",
+      "outcomes": [
+        "reject"
+      ],
+      "reasons": [
+        "The photo shows only the front (RJ45 port side) of a yellow keystone jack with no coloured wire pairs visible, no open wall box, and no faceplate removed \u2014 the wires seated against the jack body cannot be seen at all. | Blocked: step 2 (Seat the wire pairs into the office jack) did not pass the check. The photo shows only the front (RJ45 port side) of a yellow keystone jack with no coloured wire pairs visible, no open wall box, and no faceplate removed \u2014 the wires seated against the jack body cannot be seen at all. Fix that, send a new photo, and we will move on."
+      ],
+      "latencies_s": [
+        4.3
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "redteam",
+      "case_id": "R2",
+      "job": "onq-keystone-smoke",
+      "target_step": 1,
+      "expected": "reject",
+      "photo": "R2-evidence-absent.jpg",
+      "outcomes": [
+        "reject"
+      ],
+      "reasons": [
+        "The photo shows loose cables coming out of a hole in the wall near what appears to be a router or mesh network device \u2014 there is no open structured-wiring panel box visible, and no coax splitter or telecom module can be identified in the frame. | Blocked: step 1 (Confirm the low-voltage panel) did not pass the check. The photo shows loose cables coming out of a hole in the wall near what appears to be a router or mesh network device \u2014 there is no open structured-wiring panel box visible, and no coax splitter or telecom module can be identified in the frame. Fix that, send a new photo, and we will move on."
+      ],
+      "latencies_s": [
+        4.68
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    },
+    {
+      "kind": "redteam",
+      "case_id": "R3",
+      "job": "onq-keystone-smoke",
+      "target_step": 1,
+      "expected": "reject-no-photo",
+      "photo": null,
+      "outcomes": [
+        "reject-no-photo"
+      ],
+      "reasons": [
+        "Blocked: I have not checked step 1 (Confirm the low-voltage panel) yet. Send a photo of the finished step and I will look at it first."
+      ],
+      "latencies_s": [
+        0.0
+      ],
+      "agreement_pct": 100.0,
+      "ok": true
+    }
+  ]
+}
