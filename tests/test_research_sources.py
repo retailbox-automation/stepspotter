@@ -307,3 +307,81 @@ def test_every_baked_entry_is_loadable_and_grounds_a_plan():
         assert res.manual_url and res.manual_pages, path.name
         assert res.manual_path is None, f"{path.name} points at a PDF that is not shipped"
         assert path.name == f"{slug(res.product)}.json"
+
+
+# -- the source has to reach the screen, not just the object ------------------------
+
+
+def test_the_job_trace_and_the_api_carry_where_the_manual_came_from(bundled, tmp_path):
+    """A grounded run and an ungrounded one must not look the same to a judge.
+
+    The chain checked here is the whole point of the feature: baked cache -> Research
+    -> the job's trace -> the JSON the phone renders. If any link drops the source,
+    the page shows a manual link with no way to tell it came from the image rather
+    than from a live search that might have failed.
+    """
+    import io
+
+    from fastapi.testclient import TestClient
+    from PIL import Image
+
+    from stepspotter import store
+    from stepspotter.guide import JobService
+    from stepspotter.models import Plan, Step
+    from stepspotter.web.app import create_app
+
+    bake(bundled, "Westinghouse ePX3030")
+
+    def _plan(task, photo, model_id=None, research=None) -> Plan:
+        assert research is not None and research.usable, "the planner got no manual"
+        return Plan(
+            job_title="Assemble the pressure washer",
+            safety_class="diy_ok",
+            steps=[
+                Step(
+                    id=1,
+                    title="Fit the handle",
+                    action="Slide the handle on and put the two bolts in.",
+                    evidence_required="both bolts in the handle",
+                    source="manual p.10",
+                )
+            ],
+        )
+
+    service = JobService(plan_fn=_plan)
+    client = TestClient(create_app(service))
+    buf = io.BytesIO()
+    Image.new("RGB", (800, 600), (120, 120, 120)).save(buf, format="JPEG")
+
+    created = client.post(
+        "/api/jobs",
+        data={"task": TASK},
+        files={"photo": ("start.jpg", buf.getvalue(), "image/jpeg")},
+    )
+    assert created.status_code == 200, created.text
+    job_id = created.json()["job_id"]
+
+    rows = [r for r in store.read_trace(job_id) if r["event"] == "research"]
+    assert rows, "the trace has no research row"
+    assert rows[0]["source"] == "bundled"
+    assert "baked into the image" in rows[0]["source_words"]
+    assert rows[0]["manual_url"] == MANUAL_PDF
+
+    shown = client.get(f"/api/jobs/{job_id}").json()["research"]
+    assert shown["status"] == "found"
+    assert shown["source"] == "bundled"
+    assert "baked into the image" in shown["source_words"]
+    assert shown["manual_url"] == MANUAL_PDF
+
+
+def test_the_cli_prints_the_source_and_the_trail(bundled, capsys):
+    from stepspotter.cli import main
+
+    bake(bundled, "Westinghouse ePX3030")
+    code = main(["research", "Westinghouse ePX3030"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert "source:  bundled" in out
+    assert "baked into the image" in out
+    assert "tried:" in out

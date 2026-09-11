@@ -39,6 +39,28 @@ def _escalated(job_id: str) -> bool:
     return any(r.get("event") == "escalate" for r in store.read_trace(job_id))
 
 
+def _research(job_id: str) -> dict | None:
+    """What the Researcher found, and where, off the job's trace.
+
+    On screen this becomes one line under the manual link — "from the copy baked into
+    the image", "a Brave search (DuckDuckGo did not answer)", or, when nothing was
+    found, the list of what was tried. A plan written without the manual must not look
+    on the page like a plan written with it.
+    """
+    for row in store.read_trace(job_id):
+        if row.get("event") != "research":
+            continue
+        return {
+            "status": row.get("status"),
+            "source": row.get("source"),
+            "source_words": row.get("source_words"),
+            "manual_url": row.get("manual_url"),
+            "pages": list(row.get("pages") or []),
+            "trail": list(row.get("trail") or []),
+        }
+    return None
+
+
 def _step_dict(state: JobState) -> dict | None:
     step = state.current_step()
     if step is None:
@@ -70,6 +92,7 @@ def _summary(state: JobState) -> dict:
         "step_number": None if step is None else state.current + 1,
         "done": state.done,
         "escalated": _escalated(state.job_id),
+        "research": _research(state.job_id),
         "step": _step_dict(state),
         "verdict": None
         if verdict is None

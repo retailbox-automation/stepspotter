@@ -55,11 +55,13 @@ def cmd_plan(args: argparse.Namespace) -> int:
         return 0
     if plan.tools_needed:
         print("tools:  " + ", ".join(plan.tools_needed))
-    manual, pages = _manual_from_trace(state.job_id)
+    manual, pages, source_words = _manual_from_trace(state.job_id)
     if manual is None:  # no trace to read (an older job, or research switched off)
         manual = next((u for u in plan.sources if u.lower().endswith(".pdf")), None)
     if manual:
         print(f"manual: {manual}" + (f" (pages {pages})" if pages else ""))
+        if source_words:
+            print(f"found:  {source_words}")
     for url in plan.sources:
         if url != manual:
             print(f"video:  {url}")
@@ -77,8 +79,8 @@ def cmd_plan(args: argparse.Namespace) -> int:
     return 0
 
 
-def _manual_from_trace(job_id: str) -> tuple[str | None, str]:
-    """The manual URL and the pages the planner read, off the job's own trace.
+def _manual_from_trace(job_id: str) -> tuple[str | None, str, str]:
+    """Manual URL, the pages read, and where it came from — off the job's own trace.
 
     The trace is the honest source: it records the URL the Researcher actually
     downloaded. Guessing the manual out of ``plan.sources`` by a ``.pdf`` suffix
@@ -90,8 +92,8 @@ def _manual_from_trace(job_id: str) -> tuple[str | None, str]:
         url = row.get("manual_url") or None
         pages = ", ".join(str(p) for p in row.get("pages") or [])
         if url or pages:
-            return url, pages
-    return None, ""
+            return url, pages, str(row.get("source_words") or "")
+    return None, "", ""
 
 
 def cmd_research(args: argparse.Namespace) -> int:
@@ -101,6 +103,9 @@ def cmd_research(args: argparse.Namespace) -> int:
     found = research.research_product(args.product, use_cache=not args.fresh)
     print(f"product: {found.product or '(not recognised)'}")
     print(f"status:  {found.status}")
+    print(f"source:  {found.source or 'none'} — {research.where(found)}")
+    for line in found.trail:
+        print(f"  tried:  {line}")
     if found.note:
         print(f"note:    {found.note}")
     if found.manual_url:

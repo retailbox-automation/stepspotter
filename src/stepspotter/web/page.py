@@ -106,6 +106,7 @@ PAGE_HTML = r"""<!doctype html>
     <div id="stepTags"></div>
   </div>
   <p class="muted" id="manualLine"></p>
+  <p class="muted" id="researchLine"></p>
   <div id="verdictBox"></div>
   <div id="blockBox"></div>
   <button id="photoBtn">I did it — take photo</button>
@@ -208,10 +209,21 @@ function render(){
   $("stepTitle").textContent = s.title;
   $("stepAction").textContent = s.action;
   $("stepSource").textContent = s.source ? "Source: " + s.source : "";
-  const manual = (JOB.sources || []).filter(u => /\.pdf$/i.test(u))[0];
+  const r = JOB.research || null;
+  const manual = (r && r.manual_url) || (JOB.sources || []).filter(u => /\.pdf$/i.test(u))[0];
   $("manualLine").innerHTML = manual
     ? 'Manual: <a href="' + esc(manual) + '" target="_blank" rel="noopener">' + esc(manual) + '</a>'
     : "";
+  // Where the manual came from — or, when there is none, what was tried instead.
+  // An ungrounded plan has to say so here; on a phone this line is the only warning.
+  $("researchLine").textContent = !r ? ""
+    : (r.status === "found"
+        ? "Manual found via " + (r.source_words || r.source || "an earlier lookup")
+          + (r.pages && r.pages.length ? " — pages " + r.pages.join(", ") : "")
+        : (r.status === "not_found"
+            ? "No manual found, so these steps come from the photo alone"
+              + (r.trail && r.trail.length ? " (tried: " + r.trail.join("; ") + ")" : "")
+            : ""));
   const img = $("cardImg");
   img.src = JOB.card_url + "&t=" + Date.now();
   img.onerror = () => { img.style.display = "none"; $("cardNote").textContent = "The marked photo could not be drawn; the words below still apply."; };
