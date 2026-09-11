@@ -35,6 +35,7 @@ from stepspotter.guide import JobService, build_tools
 from stepspotter.models import JobState
 from stepspotter.web import demo as demo_mod
 from stepspotter.web.gated import advance_via_gate, escalate_via_tool
+from stepspotter.web.limits import install_limits
 from stepspotter.web.page import PAGE_HTML
 from stepspotter.web.photos import save_upload
 from stepspotter.web.trace_view import humanize
@@ -135,6 +136,9 @@ def create_app(service: JobService | None = None) -> FastAPI:
             ti.get("job_id") or "unknown", "gate_block", reason=reason, tool_input=ti
         ),
     )
+    # Public URL, no login, 23 days of judging: cap what one address and one day can
+    # spend on Bedrock, and keep a kill switch. See web/limits.py and OPERATIONS-JUDGING.md.
+    install_limits(app)
     app.state.service = svc
     app.state.gate = gate
     app.state.tools = tools

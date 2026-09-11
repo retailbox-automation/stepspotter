@@ -32,6 +32,16 @@ Two notes from doing exactly this:
 | `AWS_DEFAULT_REGION` | yes | `us-east-1` in every run so far. |
 | `STEPSPOTTER_DATA` | no | Where jobs, cards, photos and traces are written. Defaults to `<repo>/data`. In a container set it to a mounted path — `/data` in the Dockerfile. |
 | `STEPSPOTTER_MODEL` | no | Override the Bedrock model id. Unset uses the Strands default (`global.anthropic.claude-sonnet-4-6`), which is what every spike and the live smoke ran on. |
+| `STEPSPOTTER_PAUSED` | no | `1` turns the two spending endpoints into a 503 with a sentence a judge can read. The page, old jobs and `/healthz` stay up. The kill switch — see [OPERATIONS-JUDGING.md](OPERATIONS-JUDGING.md). |
+| `STEPSPOTTER_JOBS_PER_IP_HOUR` | no | New jobs one address may start per hour. Default **6**. |
+| `STEPSPOTTER_PHOTOS_PER_IP_HOUR` | no | Evidence photos one address may have checked per hour. Default **30**. |
+| `STEPSPOTTER_MAX_JOBS_PER_DAY` | no | New jobs the whole service will start in a UTC day, whoever is asking. Default **150**. |
+| `STEPSPOTTER_MAX_PHOTOS_PER_DAY` | no | Evidence photos the whole service will check in a UTC day, whoever is asking. Default **300**. |
+
+The last four are read on every request by `src/stepspotter/web/limits.py`; a junk or
+non-positive value falls back to the default, so a typo can never open the tap. Only
+`POST /api/jobs` and `POST /api/jobs/{id}/photo` are metered — the ones that call
+Bedrock. `GET /`, `/healthz`, the card image, advance, escalate and the trace are free.
 
 The Bedrock export has one trap worth repeating: a stale `~/.aws/credentials` is
 picked up ambiently, so an export that never reached the process shows up as
@@ -71,6 +81,8 @@ from the exit code of the command that created it.
 | Runtime role | IAM `stepspotter-agentcore-execution` (inline `stepspotter-agentcore-runtime`, trusts `bedrock-agentcore.amazonaws.com`) | IAM |
 | Scaling | App Runner auto-scaling config `stepspotter-single` rev 1 — min 1, max 1, concurrency 100 | App Runner |
 | Spend guard | AWS Budget `stepspotter-hackathon` — $45/month, e-mail at 50 / 80 / 100 % | Billing (global) |
+| Alerts | SNS `stepspotter-alerts` → admin@retailbox-automation.com (**confirmed** 2026-09-11), alarms `stepspotter-5xx` and `stepspotter-request-flood` | CloudWatch / SNS |
+| Request caps | `web/limits.py` — 6 jobs + 30 photo checks per hour per address, 150 jobs + 300 photo checks per day for the whole service, `STEPSPOTTER_PAUSED` kill switch | in the image |
 | Logs | `/aws/apprunner/stepspotter/<service-id>/{application,service}` and `/aws/bedrock-agentcore/runtimes/stepspotter_guide-Af1MWv8fnL-DEFAULT` | CloudWatch |
 
 **There are no AWS access keys anywhere in either deployment.** Both containers get
@@ -257,16 +269,43 @@ photos and traces live on that instance's ephemeral disk. `MaxSize: 1` keeps a j
 one instance for the demo, but a redeploy, a scale event or an instance replacement
 loses every job in flight.
 
+One variable moves all of it: `STEPSPOTTER_DATA`. The image sets `/data` (created and
+chown'd to uid 10001 in the `Dockerfile`); the running App Runner service overrides it
+to `/tmp/stepspotter`, which is why the two disagree — both are ephemeral, so the
+difference has never mattered, and changing the service's environment is a redeploy
+nobody needed. The per-day job counter that backs the global cap lives under the same
+root (`$STEPSPOTTER_DATA/limits/jobs-<date>.json`), so it survives an app reload and is
+thrown away with the container, exactly like the jobs. **This is deliberate for a demo
+and it is not a durable store:** a judge who loses their job to an instance replacement
+starts a new one; nothing is promised otherwise, on screen or in the README.
+
 **TODO — S3-backed JobStore.** `src/stepspotter/store.py` is the whole seam: it is a
 handful of path helpers plus read/write of JSON and JPEG bytes. Swapping those for an
 S3 client (bucket per environment, key prefix `jobs/<job_id>/`) makes the state durable
 and lets `MaxSize` rise above 1. Nothing above `store.py` needs to change.
 
-### No auth
+### No auth — and what stands in for it
 
 Anything that can reach that URL can start a job, and every job spends Bedrock tokens.
 It is unlisted, not protected. Keep it that way only for judging, and delete the
 service afterwards (see **Taking it down**).
+
+Because a login was not an option for a hackathon demo, the spend is bounded instead,
+in `src/stepspotter/web/limits.py`: **6 jobs and 30 photo checks per hour per address,
+150 jobs and 300 photo checks per day for the whole service, and a kill switch.** Those
+are the numbers that decide the worst case, so they are worth doing out loud — a job
+start is three Bedrock calls with an image, so 150 jobs a day is the ceiling the $45
+budget was drawn around; a photo check is one vision call plus the card drawn for the
+next step, so 300 of them a day is the same order of image calls.
+
+**Both day caps exist because the per-address one is optional for the caller.** The
+address is read from `X-Forwarded-For`, which the caller sends: rotate it per request
+and the hourly window never fills. The day counters are the part that cannot be walked
+around, which is why there is one for photo checks and not only for job starts (a
+rotating header bought 500 unbounded vision calls in a repro before that cap existed —
+`tests/test_limits.py::test_a_rotating_forwarded_header_cannot_buy_unlimited_photo_checks`).
+The budget alarm *tells* somebody; these *stop* it. Operating them during judging —
+what fires, who hears it, how to pause — is [OPERATIONS-JUDGING.md](OPERATIONS-JUDGING.md).
 
 ## Path B — Amazon Bedrock AgentCore Runtime
 

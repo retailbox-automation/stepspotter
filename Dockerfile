@@ -6,9 +6,19 @@
 FROM python:3.12-slim
 
 # STEPSPOTTER_DATA is writable but ephemeral — App Runner throws the filesystem away
-# with the container. STEPSPOTTER_MANUALS points at the read-only manual cache copied
+# with the container. Jobs, cards, evidence photos, traces and the per-day job counter
+# that backs the global rate cap all live under it; losing them with the container is a
+# demo trade-off written down in docs/DEPLOY.md, not an accident. (The running service
+# overrides this to /tmp/stepspotter, which is equally ephemeral.)
+# STEPSPOTTER_MANUALS points at the read-only manual cache copied
 # in below, so a judge's first request answers from the image instead of from a search
 # engine that may be rate-limiting us (DuckDuckGo returned HTTP 202 on 2026-09-11).
+#
+# The request caps and the kill switch (STEPSPOTTER_PAUSED, STEPSPOTTER_JOBS_PER_IP_HOUR,
+# STEPSPOTTER_PHOTOS_PER_IP_HOUR, STEPSPOTTER_MAX_JOBS_PER_DAY,
+# STEPSPOTTER_MAX_PHOTOS_PER_DAY) are deliberately NOT set
+# here: the defaults in src/stepspotter/web/limits.py are the safe ones, and the switch
+# belongs to whoever is operating the service. See docs/OPERATIONS-JUDGING.md.
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PORT=8080 \
