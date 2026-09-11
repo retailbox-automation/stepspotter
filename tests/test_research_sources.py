@@ -385,3 +385,38 @@ def test_the_cli_prints_the_source_and_the_trail(bundled, capsys):
     assert "source:  bundled" in out
     assert "baked into the image" in out
     assert "tried:" in out
+
+
+# -- a rejection keeps its status code ----------------------------------------------
+
+
+def test_a_rejected_fetch_reports_the_status_the_server_gave(monkeypatch):
+    """429 must not be flattened to 0: one is a rate limit, the other is a dead host.
+
+    Live, 2026-09-11: a burst of six lookups had DuckDuckGo answering 202 and Brave
+    answering 429. "brave: HTTP 429" is something a person can act on (wait, or bake
+    the model into the cache); "brave: HTTP 0" reads as "the internet is broken".
+    """
+    import urllib.error
+
+    def raising(req, timeout):
+        raise urllib.error.HTTPError(
+            "https://search.brave.com/search", 429, "Too Many Requests", {}, None
+        )
+
+    monkeypatch.setattr(research, "_open", raising)
+
+    assert research.fetch("https://search.brave.com/search?q=x") == (429, "")
+    hits, why = research.search_brave("anything")
+    assert hits == [] and why == "brave: HTTP 429"
+
+
+def test_a_host_that_never_answers_is_still_status_zero(monkeypatch):
+    def dead(req, timeout):
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(research, "_open", dead)
+
+    assert research.fetch("https://html.duckduckgo.com/html/?q=x") == (0, "")
+    _hits, why = research.search_ddg("anything")
+    assert "no answer at all" in why

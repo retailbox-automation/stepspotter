@@ -24,6 +24,7 @@ import html as _html
 import json
 import os
 import re
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -192,7 +193,14 @@ def _open(req: urllib.request.Request, timeout: float) -> tuple[int, bytes]:
 
 
 def fetch(url: str, timeout: float = 10, data: bytes | None = None) -> tuple[int, str]:
-    """GET (or POST) a page as text. Returns (status, body); (0, "") on any failure."""
+    """GET (or POST) a page as text. Returns (status, body).
+
+    A rejection keeps its real status code — Brave answers a burst of queries with
+    **429**, and "brave: HTTP 429" in the trail is a fact somebody can act on, while
+    the "HTTP 0" this used to report is indistinguishable from the host being down.
+    Only a failure with no status at all (DNS, timeout, refused, no network in the
+    container) comes back as 0.
+    """
     req = urllib.request.Request(
         url,
         data=data,
@@ -204,6 +212,12 @@ def fetch(url: str, timeout: float = 10, data: bytes | None = None) -> tuple[int
     )
     try:
         status, raw = _open(req, timeout)
+    except urllib.error.HTTPError as exc:  # 403, 429, 503 — the server did answer
+        try:
+            raw = exc.read()
+        except Exception:  # noqa: BLE001
+            raw = b""
+        return exc.code, raw.decode("utf-8", errors="replace")
     except Exception:  # noqa: BLE001 - a dead search engine is not a dead repair
         return 0, ""
     return status, raw.decode("utf-8", errors="replace")
@@ -320,7 +334,7 @@ def search_ddg(
     if 202 in seen:
         return [], "duckduckgo: HTTP 202, the rate-limit challenge page"
     if all(st == 0 for st in seen):
-        return [], "duckduckgo: no answer at all (offline, or the host is blocked)"
+        return [], "duckduckgo: no answer at all (offline, timed out, or blocked)"
     return [], f"duckduckgo: answered {seen} and parsed to zero results"
 
 
