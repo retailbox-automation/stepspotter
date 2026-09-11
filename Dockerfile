@@ -5,14 +5,20 @@
 # ARM64 ONLY, so use --platform linux/arm64 for that path (see docs/DEPLOY.md).
 FROM python:3.12-slim
 
+# STEPSPOTTER_DATA is writable but ephemeral — App Runner throws the filesystem away
+# with the container. STEPSPOTTER_MANUALS points at the read-only manual cache copied
+# in below, so a judge's first request answers from the image instead of from a search
+# engine that may be rate-limiting us (DuckDuckGo returned HTTP 202 on 2026-09-11).
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PORT=8080 \
-    STEPSPOTTER_DATA=/data
+    STEPSPOTTER_DATA=/data \
+    STEPSPOTTER_MANUALS=/app/data/manuals
 
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY data/manuals ./data/manuals
 RUN pip install --no-cache-dir . \
  && mkdir -p /data/jobs \
  && useradd --create-home --uid 10001 spotter \

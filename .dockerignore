@@ -1,7 +1,12 @@
 .git
 .gitignore
-data/
+# data/ is runtime state and must not go into the image — except data/manuals, the
+# baked manual cache the app reads when it has no network (STEPSPOTTER_MANUALS).
+# The pattern is data/** rather than data/ so the negations below can re-include.
+data/**
 !data/.gitkeep
+!data/manuals
+!data/manuals/*.json
 docs/
 tests/
 spike/

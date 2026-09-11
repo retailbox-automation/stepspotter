@@ -14,3 +14,8 @@ spikes/out/
 data/*
 !data/demo/
 !data/demo/**
+# the manual cache baked into the container image: the JSON excerpts are source and
+# travel with the repo, the downloaded PDFs (11 MB each) never do
+!data/manuals/
+data/manuals/*.pdf
+data/manuals/_tmp/
