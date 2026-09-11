@@ -2,7 +2,8 @@
 
 Endpoints (all JSON except the two image routes and ``/``):
 
-    GET  /                          the whole UI, one HTML file, no build step
+    GET  /                          form B: the screen-stack UI, one HTML file
+    GET  /chat                      form A: the chat master (prototype, same server logic)
     GET  /healthz                   liveness for App Runner / a container HEALTHCHECK
     POST /api/jobs                  multipart: task + photo  -> plan or vendor refusal
     GET  /api/jobs/{id}             where the job is right now
@@ -11,6 +12,10 @@ Endpoints (all JSON except the two image routes and ``/``):
     POST /api/jobs/{id}/advance     GATED, through the Strands hook (see gated.py)
     POST /api/jobs/{id}/escalate    stop and hand to a person
     GET  /api/jobs/{id}/evidence/N  the photo the person sent for step N
+    GET  /api/jobs/{id}/start-photo the photo the job was opened with
+    GET  /api/jobs/{id}/card/N      the card for step N (cached; the current step renders)
+    GET  /api/jobs/{id}/feed        the chat transcript, rebuilt from the trace
+    POST /api/jobs/{id}/ask         a typed question -> the Guide, with no tools at all
     GET  /api/jobs/{id}/trace       every tool call and refusal, in order
 
 Nothing here holds state of its own: the job lives in ``data/jobs/<id>.json`` and
@@ -20,7 +25,7 @@ everything that happened is appended to ``data/jobs/<id>.trace.jsonl`` by the st
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -29,6 +34,9 @@ from stepspotter import store
 from stepspotter.gate import StepGate
 from stepspotter.guide import JobService, build_tools
 from stepspotter.models import JobState
+from stepspotter.web.ask import answer as answer_question
+from stepspotter.web.chat_page import CHAT_HTML
+from stepspotter.web.feed import build_feed, composer_state
 from stepspotter.web.gated import advance_via_gate, escalate_via_tool
 from stepspotter.web.page import PAGE_HTML
 from stepspotter.web.photos import save_upload
@@ -85,8 +93,15 @@ def _summary(state: JobState) -> dict:
     }
 
 
-def create_app(service: JobService | None = None) -> FastAPI:
-    """Build the app. Pass a ``JobService`` with fake model functions to run offline."""
+def create_app(
+    service: JobService | None = None,
+    answer_fn: Callable[[JobState, str], str] | None = None,
+) -> FastAPI:
+    """Build the app. Pass a ``JobService`` with fake model functions to run offline.
+
+    ``answer_fn(state, question) -> str`` overrides who answers a question typed into
+    the chat feed; the default is the Guide on Bedrock (``web.ask.guide_answer``).
+    """
     app = FastAPI(title="StepSpotter", docs_url=None, redoc_url=None)
     svc = service or JobService()
     tools = build_tools(svc)
@@ -110,6 +125,11 @@ def create_app(service: JobService | None = None) -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     def index() -> str:
         return PAGE_HTML
+
+    @app.get("/chat", response_class=HTMLResponse)
+    def chat_page() -> str:
+        """Form A. Same endpoints, same gate, same trace — a feed instead of screens."""
+        return CHAT_HTML
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -188,6 +208,10 @@ def create_app(service: JobService | None = None) -> FastAPI:
                     if isinstance(content, dict)
                     else str(content)
                 )
+                # The cancel path traces itself through the gate's on_block. The hazard
+                # path raises an interrupt instead and traced nothing, so a reloaded
+                # feed lost the one refusal that matters most. Record it here.
+                store.trace(job_id, "gate_stop", reason=message)
                 blocked = {"blocked": True, "hazard": True, "reason": message}
             else:
                 blocked = {"blocked": True, "hazard": False, "reason": str(content)}
@@ -211,6 +235,71 @@ def create_app(service: JobService | None = None) -> FastAPI:
         if not p.is_file():
             raise HTTPException(status_code=404, detail="No photo for that step yet.")
         return FileResponse(str(p), media_type="image/jpeg")
+
+    @app.get("/api/jobs/{job_id}/start-photo")
+    def start_photo(job_id: str) -> Any:
+        """The photo the job was opened with — the first thing in the chat feed."""
+        state = _job(job_id)
+        p = Path(state.start_photo)
+        if not p.is_file():
+            raise HTTPException(status_code=404, detail="That photo is no longer on disk.")
+        return FileResponse(str(p), media_type="image/jpeg")
+
+    @app.get("/api/jobs/{job_id}/card/{step_no}")
+    def card_for_step(job_id: str, step_no: int) -> Any:
+        """The person's photo with this step's boxes on it, and nothing else.
+
+        ``layout="photo"`` on purpose: the chat writes the title, the action, the
+        do-not-touch list and the legend as real HTML, so baking the same sentences
+        into the JPEG would print every step twice (see marker.render_marked_photo).
+        A past step is served from the file drawn when it was live — re-rendering it
+        would be a fresh model call for a picture the person already acted on.
+        """
+        state = _job(job_id)
+        idx = step_no - 1
+        marked = store.cards_dir(job_id) / f"step-{step_no:02d}-photo.jpg"
+        if marked.is_file():
+            return FileResponse(str(marked), media_type="image/jpeg")
+        if idx != state.current or state.current_step() is None:
+            raise HTTPException(status_code=404, detail="No card drawn for that step.")
+        try:
+            path, _boxes = svc.card(state, layout="photo")
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=502, detail=f"Could not draw the card: {exc}")
+        return FileResponse(str(path), media_type="image/jpeg")
+
+    @app.get("/api/jobs/{job_id}/feed")
+    def feed(job_id: str) -> dict:
+        """The chat transcript. Derived from the trace every time — see web/feed.py."""
+        state = _job(job_id)
+        # Locate this step's boxes now, if nobody has yet: the legend under the photo
+        # is written from them, and the feed is fetched at exactly the moment a new
+        # step appears. Failing to draw is not failing to help — the words still go.
+        if state.current_step() is not None and state.current not in state.box_sets:
+            try:
+                svc.card(state, layout="photo")
+            except Exception as exc:  # noqa: BLE001
+                store.trace(job_id, "card_failed", step=state.current + 1, error=str(exc))
+            state = _job(job_id)
+        rows = store.read_trace(job_id)
+        escalated = _escalated(job_id)
+        return {
+            "job": _summary(state),
+            "messages": build_feed(state, rows),
+            "composer": composer_state(state, escalated),
+        }
+
+    @app.post("/api/jobs/{job_id}/ask")
+    def ask(job_id: str, question: str = Form(...)) -> dict:
+        """A question typed into the feed. Cannot move the job: the lane has no tools."""
+        state = _job(job_id)
+        q = question.strip()
+        if not q:
+            raise HTTPException(status_code=400, detail="Type the question first.")
+        store.trace(job_id, "ask", question=q)
+        text, reached = answer_question(state, q, answer_fn)
+        store.trace(job_id, "answer", text=text, model=reached)
+        return {"question": q, "answer": text, "reached_model": reached}
 
     @app.get("/api/jobs/{job_id}/trace")
     def trace(job_id: str) -> dict:
