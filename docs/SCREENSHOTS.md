@@ -17,14 +17,23 @@ description yet — each one says what the screen is doing, not what it is calle
 | 7 | `02-start-filled.png` | The whole input: one sentence about the job, one photo. No forms, no account. |
 | 8 | `03-planning.png` | Planning: the job and the first photo become an ordered plan, each step with its own required evidence. |
 | 9 | `09-eval-output.txt` (render as an image, or screenshot the terminal) | The eval harness run that is published in the repo: 3/3 steps confirmed, 3/3 wrong photos rejected, exit code non-zero if any red-team photo had got past. |
-| 10 | architecture diagram, rendered from `docs/ARCHITECTURE.md` | Seven roles on Strands Agents — Planner, Marker, Verifier, Gate, Researcher, Guide, safety fork — on Amazon Bedrock, deployed to AgentCore Runtime and App Runner. |
+| 10 | `docs/architecture.png` | Eight roles on Strands Agents — safety fork, Researcher, Planner, Guide, Verifier, Gate, Marker, Memory — on Amazon Bedrock, deployed to AgentCore Runtime and App Runner. |
 
 Not in the gallery, on purpose: `01-start-empty.png` (the same screen as #7 with nothing
 typed) and `04-step1-viewport.png` (the cropped version of #1). Both are near-duplicates,
 and a gallery of near-duplicates reads as three screens of work instead of ten.
 
-The architecture diagram is the one image that does not exist as a file yet — it is a
-mermaid block inside `docs/ARCHITECTURE.md` and has to be rendered to PNG before upload.
+The architecture diagram is rendered and checked in: **`docs/architecture.png`**
+(2184x1109, white background) and `docs/architecture.svg`, generated from the mermaid
+block in `docs/ARCHITECTURE.md` with mermaid-cli 11.17.0:
+
+```
+npx -y @mermaid-js/mermaid-cli@11 -i arch.mmd -o architecture.png -w 2200 -H 1600 -b white
+```
+
+The same PNG is the file to attach to Devpost's own **"Architecture diagram"** upload
+field, which is a required field on the submission form — a copy is staged for that at
+`docs/devpost-form-2026-09-11/architecture.png` in the parent project folder.
 
 ---
 

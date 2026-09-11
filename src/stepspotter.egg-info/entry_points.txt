@@ -1,2 +1,0 @@
-[console_scripts]
-stepspotter = stepspotter.cli:main
