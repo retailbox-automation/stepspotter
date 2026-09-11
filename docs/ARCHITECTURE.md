@@ -99,5 +99,5 @@ flowchart TD
 - `src/stepspotter/web/` — the phone-first web UI (FastAPI) — **Built**
 - `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/` — the eval harness + smoke fixtures — **Built**
 - `src/stepspotter/memory.py` — Memory: house memory on disk; the conversation itself is the SDK's `FileSessionManager` — **Built**
-- `tests/test_gate.py`, `tests/test_card.py`, `tests/test_guide_chat.py`, and the rest of `tests/` — 60 passed, 1 skipped (`PYTHONPATH=src python -m pytest -q`)
+- `tests/test_gate.py`, `tests/test_card.py`, `tests/test_guide_chat.py`, and the rest of `tests/` — 114 passed, 1 skipped (`PYTHONPATH=src python -m pytest -q`)
 - `docs/EVAL-PLAN.md` — the eval set that exercises Verifier + Gate together against a real job
