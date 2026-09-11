@@ -6,7 +6,11 @@ another one. The AWS Budget at $45 *tells* somebody after the fact; it does not 
 anything. This module is the part that actually stops things:
 
 * **per-IP** — how many jobs and how many photo checks one address may run per hour;
-* **a global daily cap on jobs** — the blast radius of one bad day, whoever is asking;
+* **a global daily cap on each of them** — the blast radius of one bad day, whoever is
+  asking. Both spending endpoints have one, because the per-address window is keyed on a
+  header the caller controls: rotate ``X-Forwarded-For`` and the hourly window is gone.
+  The day counter is what is left standing, so it has to cover *every* endpoint that
+  calls a model, not only job starts;
 * **a kill switch** — ``STEPSPOTTER_PAUSED=1`` turns the two spending endpoints into a
   plain 503 with a sentence a judge can read, while the page, the finished jobs and
   ``/healthz`` stay up.
@@ -17,7 +21,7 @@ health check that can be rate-limited is a way to take yourself down), the card 
 the job cap), advance/escalate/trace (no model behind them).
 
 Counters live in this process. App Runner runs this service at min=max=1 instance, so
-one process *is* the service; the day counter is additionally mirrored to a small file
+one process *is* the service; the day counters are additionally mirrored to small files
 under ``$STEPSPOTTER_DATA/limits/`` so that an app reload does not hand the next
 visitor a fresh budget. A container replacement does reset it — that is the same
 ephemeral disk that loses jobs, and it is written down in docs/DEPLOY.md rather than
@@ -48,6 +52,11 @@ PAUSED_MESSAGE = (
 DEFAULT_JOBS_PER_IP_HOUR = 6
 DEFAULT_PHOTOS_PER_IP_HOUR = 30
 DEFAULT_MAX_JOBS_PER_DAY = 150
+#: A photo check is one vision call, and the card drawn for the next step is a second
+#: one — so ~300 checks a day is the same order of image calls as the 150-job ceiling
+#: (3 calls each) the $45 budget was drawn around. Roughly 20 complete repairs a day,
+#: far above judging traffic; raise STEPSPOTTER_MAX_PHOTOS_PER_DAY if a judge hits it.
+DEFAULT_MAX_PHOTOS_PER_DAY = 300
 WINDOW_SECONDS = 3600
 #: Stop tracking addresses once the table gets silly (a scanner sweep, a CDN).
 MAX_TRACKED_IPS = 20_000
@@ -88,8 +97,10 @@ def client_ip(request: Request) -> tuple[str | None, str]:
     out every judge after them. Unidentifiable traffic falls through to the global daily
     cap, which still bounds the money. Wrong in the loose direction, on purpose.
 
-    A forwarded header is spoofable, like every header. The daily cap is what stands
-    behind it when somebody is actually trying rather than merely curious.
+    A forwarded header is spoofable, like every header — a caller who sends a different
+    one per request gets a fresh hourly window every time. The daily caps are what stands
+    behind it when somebody is actually trying rather than merely curious, which is why
+    there is one per spending endpoint and not only on job starts.
     """
     fwd = request.headers.get("x-forwarded-for", "")
     if fwd:
@@ -135,6 +146,7 @@ class Limiter:
         jobs_per_ip_hour: int | None = None,
         photos_per_ip_hour: int | None = None,
         max_jobs_per_day: int | None = None,
+        max_photos_per_day: int | None = None,
         clock: Callable[[], float] = time.time,
         persist: bool = True,
     ) -> None:
@@ -147,35 +159,41 @@ class Limiter:
         self.max_jobs_per_day = max_jobs_per_day or _int_env(
             "STEPSPOTTER_MAX_JOBS_PER_DAY", DEFAULT_MAX_JOBS_PER_DAY
         )
+        self.max_photos_per_day = max_photos_per_day or _int_env(
+            "STEPSPOTTER_MAX_PHOTOS_PER_DAY", DEFAULT_MAX_PHOTOS_PER_DAY
+        )
         self.clock = clock
         self.persist = persist
         self._hits: dict[tuple[str, str], deque[float]] = {}
         self._day: str = ""
-        self._day_count: int = 0
+        self._day_counts: dict[str, int] = {JOBS: 0, PHOTOS: 0}
         self._lock = threading.Lock()
+
+    def day_cap(self, bucket: str) -> int:
+        return self.max_jobs_per_day if bucket == JOBS else self.max_photos_per_day
 
     # ------------------------------------------------------------------ day counter
     def _today(self) -> str:
         return _dt.datetime.fromtimestamp(self.clock(), _dt.timezone.utc).strftime("%Y-%m-%d")
 
-    def _day_file(self, day: str):
-        return store.data_root() / "limits" / f"jobs-{day}.json"
+    def _day_file(self, bucket: str, day: str):
+        return store.data_root() / "limits" / f"{bucket}-{day}.json"
 
-    def _load_day(self, day: str) -> int:
+    def _load_day(self, bucket: str, day: str) -> int:
         if not self.persist:
             return 0
         try:
-            return int(json.loads(self._day_file(day).read_text())["jobs"])
+            return int(json.loads(self._day_file(bucket, day).read_text())[bucket])
         except Exception:  # noqa: BLE001 - a missing or corrupt counter file is not an outage
             return 0
 
-    def _save_day(self, day: str, count: int) -> None:
+    def _save_day(self, bucket: str, day: str, count: int) -> None:
         if not self.persist:
             return
         try:
-            p = self._day_file(day)
+            p = self._day_file(bucket, day)
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(json.dumps({"day": day, "jobs": count}))
+            p.write_text(json.dumps({"day": day, bucket: count}))
         except Exception:  # noqa: BLE001 - never fail a repair because a counter would not write
             pass
 
@@ -183,12 +201,12 @@ class Limiter:
         day = self._today()
         if day != self._day:
             self._day = day
-            self._day_count = self._load_day(day)
+            self._day_counts = {b: self._load_day(b, day) for b in (JOBS, PHOTOS)}
 
-    def day_count(self) -> int:
+    def day_count(self, bucket: str = JOBS) -> int:
         with self._lock:
             self._roll_day()
-            return self._day_count
+            return self._day_counts[bucket]
 
     # ------------------------------------------------------------------- per-IP
     def _prune(self, key: tuple[str, str], now: float) -> deque[float]:
@@ -197,7 +215,12 @@ class Limiter:
             hits = deque()
             if len(self._hits) >= MAX_TRACKED_IPS:
                 self._sweep(now)
-            self._hits[key] = hits
+            # If the sweep freed nothing, the table is full of live windows (a flood of
+            # spoofed addresses). Track this one in a deque nobody keeps: the per-address
+            # window is skipped, the daily cap still counts it, and the table neither
+            # grows without bound nor pays an O(n) sweep on every further request.
+            if len(self._hits) < MAX_TRACKED_IPS:
+                self._hits[key] = hits
         while hits and now - hits[0] >= WINDOW_SECONDS:
             hits.popleft()
         return hits
@@ -243,27 +266,34 @@ class Limiter:
                     window_seconds=WINDOW_SECONDS,
                 )
 
-            if bucket == JOBS:
-                self._roll_day()
-                if self._day_count >= self.max_jobs_per_day:
-                    midnight = _dt.datetime.now(_dt.timezone.utc).replace(
-                        hour=0, minute=0, second=0, microsecond=0
-                    ) + _dt.timedelta(days=1)
-                    wait = int(midnight.timestamp() - now)
-                    return Decision(
-                        429,
-                        f"This demo has run its {self.max_jobs_per_day} jobs for today — "
-                        "that cap is what keeps the hackathon credits alive for the whole "
-                        "judging window. It resets at midnight UTC; the README and the "
-                        "video show the same flow end to end.",
-                        "daily_cap",
-                        retry_after=wait,
-                        scope="global_day",
-                        limit=self.max_jobs_per_day,
-                        day=self._day,
-                    )
-                self._day_count += 1
-                self._save_day(self._day, self._day_count)
+            # Both spending buckets have a day cap. The per-address window above is keyed
+            # on a header the caller sends, so it is the only counter a rotating
+            # X-Forwarded-For cannot walk around.
+            self._roll_day()
+            cap = self.day_cap(bucket)
+            if self._day_counts[bucket] >= cap:
+                midnight = _dt.datetime.fromtimestamp(now, _dt.timezone.utc).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                ) + _dt.timedelta(days=1)
+                wait = int(midnight.timestamp() - now)
+                noun = ("jobs" if bucket == JOBS else "photo checks") if cap != 1 else (
+                    "job" if bucket == JOBS else "photo check"
+                )
+                return Decision(
+                    429,
+                    f"This demo has run its {cap} {noun} for today — "
+                    "that cap is what keeps the hackathon credits alive for the whole "
+                    "judging window. It resets at midnight UTC; the README and the "
+                    "video show the same flow end to end.",
+                    "daily_cap",
+                    retry_after=wait,
+                    scope="global_day",
+                    limit=cap,
+                    bucket=bucket,
+                    day=self._day,
+                )
+            self._day_counts[bucket] += 1
+            self._save_day(bucket, self._day, self._day_counts[bucket])
 
             if hits is not None:
                 hits.append(now)
@@ -279,7 +309,9 @@ class Limiter:
                 "jobs_per_ip_hour": self.jobs_per_ip_hour,
                 "photos_per_ip_hour": self.photos_per_ip_hour,
                 "max_jobs_per_day": self.max_jobs_per_day,
-                "jobs_today": self._day_count,
+                "max_photos_per_day": self.max_photos_per_day,
+                "jobs_today": self._day_counts[JOBS],
+                "photos_today": self._day_counts[PHOTOS],
                 "day": self._day,
                 "tracked_addresses": len({ip for _b, ip in self._hits}),
             }

@@ -72,9 +72,12 @@ has never fired is indistinguishable from one that is broken.
 | New jobs per hour, per address | 6 | `STEPSPOTTER_JOBS_PER_IP_HOUR` |
 | Photo checks per hour, per address | 30 | `STEPSPOTTER_PHOTOS_PER_IP_HOUR` |
 | New jobs per UTC day, whole service | 150 | `STEPSPOTTER_MAX_JOBS_PER_DAY` |
+| Photo checks per UTC day, whole service | 300 | `STEPSPOTTER_MAX_PHOTOS_PER_DAY` |
 
 The address is the first hop of `X-Forwarded-For` (App Runner terminates TLS in front
-of the container). Headers are forgeable — that is what the global daily cap is for.
+of the container). Headers are forgeable — a caller who sends a new one per request
+gets a fresh hourly window every time — so **every endpoint that spends money has a
+day cap too**, not only job starts. Those two counters are the ones that hold.
 
 **While filming or demoing, raise the per-address cap.** Six jobs an hour is generous
 for a judge and tight for somebody shooting takes: a recording session from one address
@@ -118,7 +121,8 @@ the peer is a link-local proxy address, the caller is *unidentified* — the per
 window is skipped and only the global daily cap applies. That is deliberately the loose
 direction. The tight direction would put every judge in one bucket and let the first one
 of the hour lock out the rest, which is the worse failure by a distance; the money stays
-bounded either way, because 150 jobs/day is enforced regardless.
+bounded either way, because the day caps (150 jobs, 300 photo checks) are enforced
+regardless of whether we can tell callers apart.
 
 **Settle it with one request after the next deploy**, no code needed:
 

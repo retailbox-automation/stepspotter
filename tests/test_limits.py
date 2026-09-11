@@ -301,3 +301,95 @@ def test_a_broken_limit_value_falls_back_to_the_safe_default(monkeypatch):
     for bad in ("abc", "-5", "0", ""):
         monkeypatch.setenv("STEPSPOTTER_MAX_JOBS_PER_DAY", bad)
         assert Limiter(persist=False).max_jobs_per_day == 150
+
+
+# ------------------------------------------- the hole a rotating header used to open
+def test_a_rotating_forwarded_header_cannot_buy_unlimited_photo_checks(monkeypatch):
+    """The per-address window is keyed on a header the caller sends. Send a new one per
+    request and that window is gone — so the photo endpoint, which is a vision call
+    every time, has to be held by a counter the caller cannot rotate away from.
+
+    Before the daily photo cap existed, 500 rotated addresses bought 500 model calls.
+    """
+    monkeypatch.setenv("STEPSPOTTER_MAX_PHOTOS_PER_DAY", "5")
+    client = _client()
+    job = _post_job(client).json()["job_id"]
+
+    def shot(i: int):
+        return client.post(
+            f"/api/jobs/{job}/photo",
+            files={"photo": ("e.jpg", _photo_bytes(), "image/jpeg")},
+            headers={"X-Forwarded-For": f"198.51.100.{i}"},  # a fresh address every time
+        )
+
+    codes = [shot(i).status_code for i in range(1, 21)]
+    assert codes.count(200) == 5, "the cap, not the number of addresses, decides"
+    over = [c for c in codes if c != 200]
+    assert over and set(over) == {429}
+
+    body = shot(99).json()
+    assert body["error"] == "daily_cap" and body["scope"] == "global_day"
+    assert body["bucket"] == "photos" and body["limit"] == 5
+    assert "5 photo checks for today" in body["detail"]
+
+
+def test_an_unidentified_caller_is_also_bounded_on_photos():
+    """No forwarded header at all (App Runner may not set one) must not mean no cap."""
+    lim = Limiter(photos_per_ip_hour=2, max_photos_per_day=3, persist=False)
+    assert [lim.check(PHOTOS, None) for _ in range(3)] == [None] * 3
+    refused = lim.check(PHOTOS, None)
+    assert refused is not None and refused.body["error"] == "daily_cap"
+
+
+def test_the_photo_day_counter_survives_a_reload_too(monkeypatch, isolated_data):
+    monkeypatch.setenv("STEPSPOTTER_MAX_PHOTOS_PER_DAY", "2")
+    first = _client()
+    job = _post_job(first).json()["job_id"]
+
+    def shot(client, jid, ip):
+        return client.post(
+            f"/api/jobs/{jid}/photo",
+            files={"photo": ("e.jpg", _photo_bytes(), "image/jpeg")},
+            headers={"X-Forwarded-For": ip},
+        )
+
+    assert shot(first, job, "203.0.113.7").status_code == 200
+    second = _client()  # same STEPSPOTTER_DATA, new process-in-spirit
+    assert second.app.state.limiter.day_count(PHOTOS) == 1
+    assert shot(second, job, "203.0.113.8").status_code == 200
+    assert shot(second, job, "203.0.113.9").status_code == 429
+    # the two buckets keep separate books
+    assert second.app.state.limiter.day_count(JOBS) == 1
+
+
+def test_the_two_day_counters_do_not_spend_each_other():
+    lim = Limiter(max_jobs_per_day=1, max_photos_per_day=1, persist=False)
+    assert lim.check(JOBS, "1.1.1.1") is None
+    assert lim.check(PHOTOS, "1.1.1.1") is None  # the job did not eat the photo budget
+    assert lim.check(JOBS, "2.2.2.2") is not None
+    assert lim.check(PHOTOS, "2.2.2.2") is not None
+
+
+def test_the_address_table_stays_bounded_under_a_flood(monkeypatch):
+    """A sweep that frees nothing must not leave the table growing (or pay O(n) per
+    request forever). Over the cap, the address is simply not tracked — the daily cap
+    is what counts the request."""
+    monkeypatch.setattr("stepspotter.web.limits.MAX_TRACKED_IPS", 50)
+    lim = Limiter(photos_per_ip_hour=5, max_photos_per_day=10_000, persist=False)
+    for i in range(500):
+        lim.check(PHOTOS, f"10.0.{i // 256}.{i % 256}")
+    assert len(lim._hits) <= 50
+    assert lim.day_count(PHOTOS) == 500  # every one of them was still counted
+
+
+def test_a_broken_photo_cap_value_falls_back_to_the_safe_default(monkeypatch):
+    for bad in ("abc", "-5", "0", ""):
+        monkeypatch.setenv("STEPSPOTTER_MAX_PHOTOS_PER_DAY", bad)
+        assert Limiter(persist=False).max_photos_per_day == 300
+
+
+def test_the_configured_caps_are_traced_including_photos(monkeypatch, isolated_data):
+    monkeypatch.setenv("STEPSPOTTER_MAX_PHOTOS_PER_DAY", "77")
+    _client()
+    row = store.read_trace("limits")[0]
+    assert row["max_photos_per_day"] == 77 and row["photos_today"] == 0

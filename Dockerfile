@@ -15,7 +15,8 @@ FROM python:3.12-slim
 # engine that may be rate-limiting us (DuckDuckGo returned HTTP 202 on 2026-09-11).
 #
 # The request caps and the kill switch (STEPSPOTTER_PAUSED, STEPSPOTTER_JOBS_PER_IP_HOUR,
-# STEPSPOTTER_PHOTOS_PER_IP_HOUR, STEPSPOTTER_MAX_JOBS_PER_DAY) are deliberately NOT set
+# STEPSPOTTER_PHOTOS_PER_IP_HOUR, STEPSPOTTER_MAX_JOBS_PER_DAY,
+# STEPSPOTTER_MAX_PHOTOS_PER_DAY) are deliberately NOT set
 # here: the defaults in src/stepspotter/web/limits.py are the safe ones, and the switch
 # belongs to whoever is operating the service. See docs/OPERATIONS-JUDGING.md.
 ENV PYTHONUNBUFFERED=1 \
