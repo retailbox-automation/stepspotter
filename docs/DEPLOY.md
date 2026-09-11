@@ -73,9 +73,9 @@ from the exit code of the command that created it.
 | What | Name / id | Where |
 |---|---|---|
 | Web UI (phone-first) | App Runner service `stepspotter` | **https://w7ihmvgxxj.us-east-1.awsapprunner.com** |
-| Guide agent | AgentCore Runtime `stepspotter_guide`, id `stepspotter_guide-Af1MWv8fnL`, version 2 | `arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL` |
-| Web image | ECR `stepspotter:web` — linux/amd64, 127.0 MB, `sha256:e0de4935…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
-| Guide image | ECR `stepspotter-agentcore:guide` — linux/arm64, `sha256:14deb1de…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore` |
+| Guide agent | AgentCore Runtime `stepspotter_guide`, id `stepspotter_guide-Af1MWv8fnL`, version 3 | `arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL` |
+| Web image | ECR `stepspotter:web` — linux/amd64, 127.9 MB, `sha256:5cf39d91…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
+| Guide image | ECR `stepspotter-agentcore:guide` — linux/arm64, `sha256:0e43ad74…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore` |
 | Pull role | IAM `stepspotter-apprunner-ecr-access` (`AWSAppRunnerServicePolicyForECRAccess`, trusts `build.apprunner.amazonaws.com`) | IAM |
 | Container role | IAM `stepspotter-apprunner-instance` (inline `stepspotter-bedrock-invoke`, trusts `tasks.apprunner.amazonaws.com`) | IAM |
 | Runtime role | IAM `stepspotter-agentcore-execution` (inline `stepspotter-agentcore-runtime`, trusts `bedrock-agentcore.amazonaws.com`) | IAM |
@@ -89,6 +89,81 @@ from the exit code of the command that created it.
 Bedrock through a role: `AWS_ACCESS_KEY_ID` is unset in App Runner's environment, and
 the first live job on that URL planned nine steps off a real photo — which only works
 if `bedrock:InvokeModel` reached the model through `stepspotter-apprunner-instance`.
+
+## Redeploy of 2026-09-11 (second, 15:00Z) — the four-branch merge
+
+The judge-mode screen, the spend guardrails, the two-mark marker and the second pass of
+the submission docs were merged to `main` and pushed to both deployments. Same mutable
+tags (`:web`, `:guide`), so the digests they pointed at were given permanent tags first —
+a rollback you cannot name is not a rollback:
+
+| | Previous (rollback point) | Now live |
+|---|---|---|
+| `stepspotter:web` | `sha256:e0de4935…`, also tagged **`web-rollback-20260911b`** | `sha256:5cf39d91…` |
+| `stepspotter-agentcore:guide` | `sha256:14deb1de…`, also tagged **`guide-rollback-20260911b`** | `sha256:0e43ad74…` |
+| AgentCore Runtime version | 2 | 3 |
+
+Both rollback tags were read back with `describe-images` after the `put-image`, not taken
+from the put's own response. To undo, follow the rollback commands in the section below
+with `…-20260911b` in place of `…-20260911`.
+
+### What was checked after this push (failures, not successes)
+
+Error counts were taken **before** the deploy and again after, with the same command, so
+"after" had something to compare against.
+
+| Log group | Before (120 min) | After (since the push) |
+|---|---|---|
+| `/aws/apprunner/.../application` | 839 events, **0** Traceback/ERROR/Exception/Timeout, 0 5xx | 240 events, **0** and 0 5xx |
+| `/aws/apprunner/.../service` | 14 events, **0** | 13 events, **0** |
+| `/aws/bedrock-agentcore/runtimes/…-DEFAULT` | 19 events, **0** | 13 events, **0** |
+
+Status census on the application log after the push: **217 × 200, 10 × 422, 6 × 429** —
+the 422s and 429s are the rate-limit probe below, not visitors. Nothing was rolled back.
+
+What was proven rather than assumed:
+
+* **The merged code is the code serving.** The deployed HTML contains `Try a demo`,
+  `demo-photo` and `researchLine`; `GET /api/jobs/limits/trace` answers with the
+  guardrail configuration (`jobs_per_ip_hour: 6`, `max_jobs_per_day: 150`). None of those
+  exist in the previous image. A `/healthz` 200 alone would not have shown it.
+* **The demo button a judge will click is a real job.** Clicked as a phone user
+  (390 × 844, iPhone user-agent, a real mouse event — not `element.click()`): *Try a demo
+  job* planned **8 steps** off the bundled panel photo in ~35 s, and the card carried
+  **exactly two marks** — one green to work in, one red to keep away from, drawn on the
+  photo with no text baked into the image. That is the marker-clarity change, on screen.
+* **The gate still refuses, and still lets through.** On step 1 the wrong demo photo came
+  back *"Not yet"* and no **Next step** button appeared; the right photo came back *"That
+  looks done"*, the button appeared, and clicking it moved the job to **step 2 of 8**. On
+  step 2 — which asks for labelled cables — *both* demo photos are refused, with reasons
+  naming what is missing. Refusals and passes from the same endpoint in one session is
+  the must-differ control: the check can fail, so its passes mean something.
+* **The trace a judge reads carries no filesystem paths.** The page requests
+  `…/trace?view=human` and renders 0 occurrences of `/tmp` and 0 of `.jpg`; the raw
+  operator rows, which do carry container paths, sit behind an explicit
+  *"Show the raw log (for engineers)"* link. That split is deliberate — see the
+  endpoint's docstring.
+* **The caps hold, and the day cap is the one that matters.** Seven `POST /api/jobs` from
+  one address: `422 422 422 422 422 429 429` — the 429 carries a sentence a person can
+  read (*"This demo allows 6 jobs an hour from one address… Try again in 50 min"*), while
+  `GET /healthz` answered **200 throughout**, so the 429 is the limiter and not the
+  service falling over. The per-address hour window is keyed on a header the caller
+  sends and a rotated `X-Forwarded-For` does get past it; the **global day cap is the
+  backstop that cannot be walked around**. Reproduced against the merged tree with
+  `MAX_JOBS_PER_DAY=3` and a different spoofed address every request:
+  `422 422 422 429 429 429 429`, and `POST /api/demo/jobs` — the judges' button — draws
+  from the same counter, so it cannot be used to go around it.
+* **The baked manual answers with no network at all.** Both pushed images, run under
+  `--network none`: *Westinghouse ePX3030* → `source: bundled`, *"the copy baked into the
+  image (no network)"*; the control, an unknown model (*APC BX1350M*) → `source: none`,
+  `usable: False`. The probe can fail, which is what makes the positive result evidence.
+  On the live runtime, AgentCore **v3** answered `statusCode` 200 in **7 s** with the
+  manual URL and assembly pages **10–14**, and its container log shows `Tool #1: find_manual`.
+
+⚠️ `find_manual()` on its own is the *download* path: offline it reports the index URL
+"would not download", then falls through to the search engines and returns `None`. The
+bundled excerpt is reached through `research_product()`. Anyone testing the offline
+guarantee should call that one, or they will conclude the cache is broken when it is not.
 
 ## Redeploy of 2026-09-11 — and how to undo it
 

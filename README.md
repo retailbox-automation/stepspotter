@@ -242,12 +242,12 @@ polite.
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
 | Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → from a fresh clone, **184 passed, 7 skipped** with the `agentcore` extra and **171 passed, 8 skipped** without it; on the machine that also holds the raw photo archive, 190 / 1 and 177 / 2 |
-| Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/` |
+| Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/`; a camera-free **Try a demo job** button for judges, a readable *See what it did* trace, and per-address + per-day spend caps in front of the two endpoints that call a model (`src/stepspotter/web/limits.py`, `docs/OPERATIONS-JUDGING.md`) |
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
 | Full 12-step eval set (`docs/EVAL-PLAN.md` §2, red-team R1–R6) | ⛔ Not run — waiting on evidence photos from the finished job |
-| Deploy — phone web app | ✅ Live on AWS App Runner: <https://w7ihmvgxxj.us-east-1.awsapprunner.com> (`/healthz` 200). Redeployed 2026-09-11 with the baked manual cache — a live ePX3030 job on that URL cites *"the copy baked into the image (no network)"*, so the demo does not depend on a search engine |
-| Deploy — Guide agent on Amazon Bedrock AgentCore Runtime | ✅ `stepspotter_guide` READY, version 2 (2026-09-11) — invoked live, resolves the ePX3030 manual to pages 10–14 from the baked excerpt; see `docs/DEPLOY.md` |
+| Deploy — phone web app | ✅ Live on AWS App Runner: <https://w7ihmvgxxj.us-east-1.awsapprunner.com> (`/healthz` 200). Redeployed 2026-09-11 15:00Z with the four-branch merge — clicked through on a phone viewport: *Try a demo job* → 8 steps → a refused photo → a passing one → step 2. Image `sha256:5cf39d91…`, rollback tag `web-rollback-20260911b`; see `docs/DEPLOY.md` |
+| Deploy — Guide agent on Amazon Bedrock AgentCore Runtime | ✅ `stepspotter_guide` READY, version 3 (2026-09-11) — invoked live, 200 in 7 s, resolves the ePX3030 manual to pages 10–14 from the baked excerpt with no network; rollback tag `guide-rollback-20260911b`; see `docs/DEPLOY.md` |
 
 ## Setup
 
