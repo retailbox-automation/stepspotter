@@ -14,8 +14,14 @@ spikes/out/
 data/*
 !data/demo/
 !data/demo/**
-# the manual cache baked into the container image: the JSON excerpts are source and
-# travel with the repo, the downloaded PDFs (11 MB each) never do
+# The manual cache baked into the container image. Only the hand-checked excerpts
+# listed below are source and travel with the repo. Everything else in this directory
+# is ignored on purpose: a runtime lookup writes its own <model>.json here carrying
+# manual_path — the absolute path of the PDF on whoever's machine ran it — and this
+# repo is public. Adding a model with tools/bake_manual_cache.py means adding a line
+# here too, which is the moment to decide that excerpt should be published.
 !data/manuals/
-data/manuals/*.pdf
-data/manuals/_tmp/
+data/manuals/*
+!data/manuals/index.json
+!data/manuals/westinghouse-epx3030.json
+!data/manuals/ryobi-ry31012.json
