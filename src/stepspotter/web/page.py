@@ -4,9 +4,35 @@ front of an open panel.
 
 The colours match the rendered card exactly (green = do this here, red = do not
 touch, orange = stop and get a human), so the picture and the words agree.
+
+Two audiences open this page, and the first screen has to serve both: the person
+standing in front of the panel, and someone reviewing the project with no panel and
+ten minutes. The second one gets three lines saying what this is, a link to the code,
+and a demo that needs no camera.
 """
 
-PAGE_HTML = r"""<!doctype html>
+#: Shown on the first screen. The repository is public; the video link is filled in
+#: when there is a video to link to, and the line simply does not render while it is
+#: empty — a dead "watch the video" link is worse than no link.
+REPO_URL = "https://github.com/retailbox-automation/stepspotter"
+VIDEO_URL = ""
+
+
+def render_page(repo_url: str = REPO_URL, video_url: str = VIDEO_URL) -> str:
+    """Build the page HTML. Substitution is done by replace, not format: the inline
+    CSS is full of braces and would have to be doubled for every rule."""
+    video = (
+        f'<a href="{video_url}" target="_blank" rel="noopener">Watch the 3-minute demo</a>'
+        if video_url
+        else ""
+    )
+    return (
+        _PAGE_TEMPLATE.replace("__REPO_URL__", repo_url)
+        .replace("__VIDEO_LINK__", video)
+    )
+
+
+_PAGE_TEMPLATE = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -60,15 +86,53 @@ PAGE_HTML = r"""<!doctype html>
   .muted{color:var(--dim);font-size:14px}
   .banner{border:1px solid var(--avoid);background:#e5484d18;border-radius:12px;padding:12px;margin:12px 0}
   .banner.stopc{border-color:var(--stop);background:#f0932b18}
-  ol.trace{list-style:none;padding:0;margin:0;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
-  ol.trace li{border-bottom:1px solid var(--line);padding:8px 0;color:var(--dim);word-break:break-word}
+  ol.trace{list-style:none;padding:0;margin:0}
+  ol.trace li{border-bottom:1px solid var(--line);padding:10px 0;color:var(--dim);
+       overflow-wrap:anywhere}
   ol.trace li b{color:var(--ink)}
+  ol.trace.raw{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tr-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .tr-actor{color:var(--ink);font-weight:700;font-size:15px}
+  .tr-at{color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums;margin-left:auto}
+  .tr-what{color:var(--ink);font-size:15px}
+  .tr-result{font-size:15px;margin-top:2px}
+  .tr-why{font-size:14px;color:var(--dim);margin-top:2px}
+  .tr-result.ok{color:var(--act)} .tr-result.bad{color:var(--avoid)}
+  .tr-result.stop{color:var(--stop)}
+  .viewswitch{display:flex;gap:10px;align-items:baseline;margin:0 0 10px}
+  .viewswitch a{font-size:14px;cursor:pointer}
   .row{display:flex;gap:10px} .row button{margin-top:12px}
   .hide{display:none}
   .spin{display:inline-block;width:14px;height:14px;border:2px solid #ffffff60;border-top-color:#fff;
         border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px;margin-right:8px}
   @keyframes s{to{transform:rotate(360deg)}}
-  a{color:var(--accent)}
+  /* A manual URL is one long unbreakable token; on a 390px phone it pushed the whole
+     page sideways. Break it anywhere and never let it set the page's width. */
+  a{color:var(--accent);overflow-wrap:anywhere;word-break:break-word}
+  #manualLine a{display:inline-block;max-width:100%;vertical-align:top}
+  p,li,.tag,.verdict p{overflow-wrap:anywhere}
+
+  /* --- first screen: what this is, and a way in without a camera --- */
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:14px;
+         padding:14px;margin:0 0 16px}
+  .intro p{margin:0 0 8px;font-size:15px}
+  .intro p:last-of-type{margin-bottom:0}
+  .intro .lock{color:var(--act);font-weight:650}
+  .links{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:14px}
+  .demo{border:1px solid var(--accent);border-radius:14px;padding:14px;margin:0 0 18px;
+        background:#4f8cff12}
+  .demo h2{font-size:16px;margin:0 0 6px}
+  .demo p{margin:0;font-size:14px;color:var(--dim)}
+  .demo button{margin-top:10px}
+  .or{color:var(--dim);font-size:13px;text-transform:uppercase;letter-spacing:.8px;
+      text-align:center;margin:0 0 10px}
+  .wait{margin:12px 0 0;font-size:15px;color:var(--ink);min-height:22px}
+  .wait .secs{color:var(--dim);font-variant-numeric:tabular-nums}
+  .wait .muted{display:block;margin-top:2px}
+  .demobar{border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0;
+           background:#4f8cff10}
+  .demobar p{margin:0 0 4px;font-size:14px;color:var(--dim)}
+  .demobar .cap{font-size:13px}
 </style>
 </head>
 <body>
@@ -76,15 +140,36 @@ PAGE_HTML = r"""<!doctype html>
 <main>
 
 <section id="screen-start">
-  <h1>What are you fixing?</h1>
-  <p class="sub">Write it in your own words, then take a photo of the thing itself.
-     You will get one step at a time, drawn on your photo.</p>
+  <h1>Fix it one step at a time</h1>
+  <div class="intro">
+    <p>StepSpotter walks you through a home repair <b>one step at a time</b>, drawn on a
+       photo of your own thing — with what to do, what not to touch, and when to stop.</p>
+    <p><span class="lock">The next step stays locked</span> until a photo proves the last
+       one was really done. That lock is code, not a polite model: a Strands hook cancels
+       the tool call.</p>
+    <p>If the job turns out to need a licensed professional, it writes no steps at all.</p>
+    <div class="links">
+      <a href="__REPO_URL__" target="_blank" rel="noopener">Source code on GitHub</a>
+      __VIDEO_LINK__
+    </div>
+  </div>
+
+  <div class="demo hide" id="demoCard">
+    <h2>No panel in front of you?</h2>
+    <p id="demoTask">Run the whole thing on a real photo from the repo — a real plan, a
+       real refusal, a real pass. Nothing is pre-recorded.</p>
+    <button id="demoBtn">Try a demo job</button>
+    <p class="wait" id="demoWait"></p>
+  </div>
+
+  <p class="or" id="orLine">or use your own photo</p>
   <label for="task">The job</label>
   <textarea id="task" placeholder="e.g. Connect the two blue cables to new jacks and test the link"></textarea>
   <label>Your photo</label>
   <label class="filebtn" id="startPhotoLabel" for="startPhoto">Tap to take or choose a photo</label>
   <input id="startPhoto" type="file" accept="image/*" capture="environment" class="hide">
   <button id="startBtn">Plan my steps</button>
+  <p class="wait" id="startWait"></p>
   <p class="muted" id="startNote"></p>
 </section>
 
@@ -109,9 +194,19 @@ PAGE_HTML = r"""<!doctype html>
   <p class="muted" id="researchLine"></p>
   <div id="verdictBox"></div>
   <div id="blockBox"></div>
+  <!-- Directly under the verdict on purpose: when a photo passes, the next thing to
+       do must be the next thing on screen, not below two other buttons. -->
+  <button id="nextBtn" class="hide">Next step</button>
+  <div class="demobar hide" id="demoBar">
+    <p><b>Demo</b> — no camera needed. Two real photos, sent to the same checker:</p>
+    <button class="ghost" id="demoWrongBtn">Send the wrong photo</button>
+    <p class="cap muted" id="demoWrongCap"></p>
+    <button id="demoRightBtn">Send the right photo</button>
+    <p class="cap muted" id="demoRightCap"></p>
+  </div>
   <button id="photoBtn">I did it — take photo</button>
   <input id="stepPhoto" type="file" accept="image/*" capture="environment" class="hide">
-  <button id="nextBtn" class="hide">Next step</button>
+  <p class="wait" id="stepWait"></p>
   <div class="row">
     <button class="stop" id="stopBtn">Stop, get a person</button>
     <button class="ghost" id="traceBtn">See what it did</button>
@@ -135,7 +230,11 @@ PAGE_HTML = r"""<!doctype html>
 
 <section id="screen-trace" class="hide">
   <h1>Every step it took</h1>
-  <p class="sub">Plans, cards, photo verdicts and every refusal, in order.</p>
+  <p class="sub">Who did what, what came back, and why — plans, cards, photo verdicts
+     and every refusal, in order.</p>
+  <div class="viewswitch">
+    <a id="rawLink">Show the raw log (for engineers)</a>
+  </div>
   <ol class="trace" id="traceList"></ol>
   <button class="ghost" id="backBtn">Back</button>
 </section>
@@ -143,7 +242,31 @@ PAGE_HTML = r"""<!doctype html>
 </main>
 <script>
 const $ = (id) => document.getElementById(id);
-let JOB = null, BUSY = false;
+let JOB = null, BUSY = false, DEMO = null;
+
+// A plan is four model calls and takes most of a minute; a photo check takes a few
+// seconds. Silence for that long reads as "it broke", so say what is happening now
+// and keep a second counter running, which is the part that proves it is still alive.
+const PLAN_STAGES = ["Looking at your photo…",
+                     "Checking it is safe to do yourself…",
+                     "Looking up the manual…",
+                     "Writing the steps…"];
+const CHECK_STAGES = ["Checking your photo…", "Comparing it with what the step asked for…"];
+
+function waiting(el, stages, every, note){
+  const t0 = Date.now(); let i = 0;
+  const paint = () => {
+    // No spinner here: the button that was pressed already has one, and two of them
+    // spinning at different phases reads as two things happening.
+    const secs = Math.round((Date.now() - t0) / 1000);
+    el.innerHTML = esc(stages[i]) + ' <span class="secs">' + secs + 's</span>'
+      + (note ? '<span class="muted">' + esc(note) + '</span>' : '');
+  };
+  paint();
+  const tick = setInterval(paint, 1000);
+  const move = setInterval(() => { if(i < stages.length - 1){ i++; paint(); } }, every);
+  return () => { clearInterval(tick); clearInterval(move); el.innerHTML = ""; };
+}
 
 function show(name){
   ["start","vendor","step","done","stopped","trace"].forEach(s =>
@@ -177,16 +300,43 @@ $("startBtn").addEventListener("click", async () => {
   const task = $("task").value.trim(), file = $("startPhoto").files[0];
   if(!task){ $("startNote").textContent = "Write what you want to do first."; return; }
   if(!file){ $("startNote").textContent = "Add a photo of the thing you are fixing."; return; }
-  $("startNote").textContent = "Looking at your photo. This takes about half a minute.";
+  $("startNote").textContent = "";
   const fd = new FormData(); fd.append("task", task); fd.append("photo", file);
-  busy($("startBtn"), true, "Planning…");
+  await plan($("startBtn"), $("startWait"), "/api/jobs", {method:"POST", body:fd});
+});
+
+// ---- demo ----------------------------------------------------------------
+// The same endpoints a phone hits; only the JPEG bytes come from the repo instead of
+// a camera. Nothing here shortcuts the planner, the checker or the gate.
+$("demoBtn").addEventListener("click", async () => {
+  await plan($("demoBtn"), $("demoWait"), "/api/demo/jobs", {method:"POST"});
+});
+
+async function plan(btn, waitEl, url, opts){
+  const stop = waiting(waitEl, PLAN_STAGES, 9000,
+                       "Usually 20–40 seconds. These are live model calls, not a recording.");
+  busy(btn, true, "Planning…");
   try {
-    JOB = await api("/api/jobs", {method:"POST", body:fd});
+    JOB = await api(url, opts);
     history.replaceState(null, "", "?job=" + JOB.job_id);
     render();
   } catch(err){ $("startNote").textContent = err.message; }
-  finally { busy($("startBtn"), false); }
-});
+  finally { stop(); busy(btn, false); }
+}
+
+async function sendDemoPhoto(which, btn){
+  const fd = new FormData(); fd.append("which", which);
+  $("blockBox").innerHTML = "";
+  const stop = waiting($("stepWait"), CHECK_STAGES, 3000, "About 5 seconds.");
+  busy(btn, true, "Checking…");
+  try {
+    const res = await api("/api/jobs/" + JOB.job_id + "/demo-photo", {method:"POST", body:fd});
+    JOB = res.job; render();
+  } catch(err){ $("blockBox").innerHTML = '<div class="banner">'+esc(err.message)+'</div>'; }
+  finally { stop(); busy(btn, false); }
+}
+$("demoWrongBtn").addEventListener("click", () => sendDemoPhoto("wrong", $("demoWrongBtn")));
+$("demoRightBtn").addEventListener("click", () => sendDemoPhoto("right", $("demoRightBtn")));
 
 // ---- step ----------------------------------------------------------------
 function render(){
@@ -247,6 +397,9 @@ function render(){
   } else { $("verdictBox").innerHTML = ""; }
   $("nextBtn").classList.toggle("hide", !(v && v.passed && !v.stop));
   $("photoBtn").innerHTML = v ? "Take another photo" : "I did it — take photo";
+  // In demo mode the two repo photos replace the camera; everything else is identical.
+  $("demoBar").classList.toggle("hide", !JOB.demo);
+  $("photoBtn").classList.toggle("hide", !!JOB.demo);
   show("step");
 }
 
@@ -255,12 +408,13 @@ $("stepPhoto").addEventListener("change", async (e) => {
   const f = e.target.files[0]; if(!f) return;
   const fd = new FormData(); fd.append("photo", f);
   $("blockBox").innerHTML = "";
-  busy($("photoBtn"), true, "Checking your photo…");
+  const stop = waiting($("stepWait"), CHECK_STAGES, 3000, "About 5 seconds.");
+  busy($("photoBtn"), true, "Checking…");
   try {
     const res = await api("/api/jobs/"+JOB.job_id+"/photo", {method:"POST", body:fd});
     JOB = res.job; render();
   } catch(err){ $("blockBox").innerHTML = '<div class="banner">'+esc(err.message)+'</div>'; }
-  finally { busy($("photoBtn"), false); e.target.value = ""; }
+  finally { stop(); busy($("photoBtn"), false); e.target.value = ""; }
 });
 
 $("nextBtn").addEventListener("click", async () => {
@@ -286,23 +440,61 @@ $("stopBtn").addEventListener("click", async () => {
   finally { busy($("stopBtn"), false); }
 });
 
+// The trace a person reads: actor, what they did, how it came out, why. The raw rows
+// are a separate request behind the link below — they are full of container paths and
+// job ids, which answer a question nobody standing at a panel is asking.
 async function openTrace(){
   try {
-    const res = await api("/api/jobs/"+JOB.job_id+"/trace");
+    const res = await api("/api/jobs/"+JOB.job_id+"/trace?view=human");
+    $("traceList").className = "trace";
+    $("traceList").innerHTML = res.human.map(r =>
+      '<li><div class="tr-head"><span class="tr-actor">'+esc(r.actor)+'</span>'
+      + '<span class="tr-at">'+esc(r.at)+'</span></div>'
+      + '<div class="tr-what">'+esc(r.what)+'</div>'
+      + (r.result ? '<div class="tr-result '+esc(r.tone||"")+'">'+esc(r.result)+'</div>' : "")
+      + (r.why ? '<div class="tr-why">'+esc(r.why)+'</div>' : "")
+      + '</li>').join("");
+    $("rawLink").textContent = "Show the raw log (for engineers)";
+    show("trace");
+  } catch(err){ alert(err.message); }
+}
+$("rawLink").addEventListener("click", async () => {
+  if($("traceList").classList.contains("raw")) return openTrace();
+  try {
+    const res = await api("/api/jobs/"+JOB.job_id+"/trace?view=raw");
+    $("traceList").className = "trace raw";
     $("traceList").innerHTML = res.rows.map(r => {
       const rest = Object.keys(r).filter(k => !["at","job_id","event"].includes(k))
         .map(k => k+"="+JSON.stringify(r[k])).join("  ");
       return "<li><b>"+esc(r.event)+"</b> <span>"+esc(r.at)+"</span><br>"+esc(rest)+"</li>";
     }).join("");
-    show("trace");
+    $("rawLink").textContent = "Back to the readable one";
   } catch(err){ alert(err.message); }
-}
+});
 ["traceBtn","traceBtn2","traceBtn3"].forEach(id => $(id).addEventListener("click", openTrace));
 $("backBtn").addEventListener("click", render);
+
+// The demo button only appears if the photos are actually installed — an install
+// without them (or a stripped image) should show no button rather than a broken one.
+async function loadDemo(){
+  try { DEMO = await api("/api/demo"); } catch(err){ DEMO = null; }
+  const on = !!(DEMO && DEMO.available);
+  $("demoCard").classList.toggle("hide", !on);
+  $("orLine").classList.toggle("hide", !on);
+  if(!on) return;
+  $("demoTask").textContent = "Runs this job on a real photo of a low-voltage panel, "
+    + "from the repo: “" + DEMO.task + "”. Real plan, real refusal, real pass — "
+    + "nothing pre-recorded.";
+  $("demoWrongBtn").textContent = DEMO.buttons.wrong.label;
+  $("demoWrongCap").textContent = DEMO.buttons.wrong.caption;
+  $("demoRightBtn").textContent = DEMO.buttons.right.label;
+  $("demoRightCap").textContent = DEMO.buttons.right.caption;
+}
 
 // A phone reloads, a screen locks, a browser is killed mid-job. ?job=<id> comes back
 // to the same step: the job lives on the server, the page holds nothing.
 (async function resume(){
+  await loadDemo();
   const id = new URLSearchParams(location.search).get("job");
   if(!id){ return show("start"); }
   try { JOB = await api("/api/jobs/"+id); render(); }
@@ -312,3 +504,6 @@ $("backBtn").addEventListener("click", render);
 </body>
 </html>
 """
+
+#: What ``app.py`` serves. Built once at import — the page has no per-request state.
+PAGE_HTML = render_page()

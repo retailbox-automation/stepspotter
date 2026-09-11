@@ -221,7 +221,7 @@ polite.
 | Piece | Status |
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
-| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → **114 passed, 1 skipped** (the skip is the one test that needs live AWS credentials) |
+| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → **141 passed, 1 skipped** (the skip is the one test that needs live AWS credentials) |
 | Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/` |
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
@@ -260,7 +260,7 @@ needed on the account these spikes ran on.
 Run what's real today, offline, no AWS needed:
 
 ```bash
-python -m pytest -q                      # 114 passed, 1 skipped — the full suite
+python -m pytest -q                      # 141 passed, 1 skipped — the full suite
 python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract on its own
 ```
 
@@ -272,6 +272,22 @@ stepspotter serve --port 8137
 Then open `http://<your-machine's-LAN-ip>:8137` on a phone — the photo inputs use
 `capture="environment"` and open the rear camera directly. Full deploy notes
 (App Runner, AgentCore Runtime, Docker): `docs/DEPLOY.md`.
+
+**No panel in front of you?** The first screen has a **Try a demo job** button. It
+runs the whole thing on three photos of a real low-voltage panel shipped inside the
+package (`src/stepspotter/web/demo_photos/`), and then offers *Send the wrong photo*
+and *Send the right photo* in place of the camera. Everything behind those buttons is
+live: the Planner writes the plan, the Verifier judges each photo, and the gate hook
+decides whether "Next step" is allowed. No verdict is canned, and because the model is
+not deterministic the plan differs run to run — the page shows whatever actually came
+back.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /api/demo/jobs` | start the demo job on the packaged start photo |
+| `POST /api/jobs/{id}/demo-photo` (`which=wrong\|right`) | send a packaged photo to the real Verifier |
+| `GET /api/jobs/{id}/trace?view=human` | who did what, what came back, why — no paths, no ids |
+| `GET /api/jobs/{id}/trace?view=raw` | the operator's log, behind the page's "raw" link |
 
 Run the eval harness against the checked-in smoke fixture (needs the AWS export
 above — it makes real Bedrock calls):

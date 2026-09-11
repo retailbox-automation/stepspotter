@@ -210,7 +210,7 @@ photo buttons go straight to the rear camera. Health check: `/healthz` returns
 git clone https://github.com/retailbox-automation/stepspotter && cd stepspotter
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,agentcore]"
-python -m pytest -q                            # 114 passed, 1 skipped
+python -m pytest -q                            # 141 passed, 1 skipped
 stepspotter research "Westinghouse ePX3030"    # finds the maker's manual
 ```
 
