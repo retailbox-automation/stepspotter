@@ -664,7 +664,11 @@ $("feed").addEventListener("click", async (e) => {
   BUSY = true; btn.disabled = true; clearFail();
   try { if(act === "advance") await doAdvance("skip"); else if(act === "escalate") await doEscalate(); }
   catch(err){ typing(false); fail(err.message); }
-  finally { BUSY = false; }
+  // Re-enabled on purpose. The message it sits in is never removed from the feed, so
+  // leaving it dead after one press turns a refusal a judge just watched into a
+  // control that silently does nothing the second time. Asking twice is allowed: each
+  // ask is its own row in the trace, and the gate answers it the same way.
+  finally { BUSY = false; btn.disabled = false; }
 });
 
 // ---- the demo: same planner, same verifier, same gate, photos from the repo ----
