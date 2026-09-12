@@ -140,8 +140,8 @@ or a cursor move inserted before final export.
 ## Music
 
 YouTube Audio Library only (no attribution required, and it does not risk a
-Content ID geo-block the way third-party tracks can — see
-`Retailbox - CockroachDB Hackathon/docs/VIDEO-CRAFT-NOTES.md`). Keep it under the
+Content ID geo-block the way third-party tracks can — a lesson carried over from
+an earlier hackathon's video-craft notes). Keep it under the
 voice-over, ducked further under the 0:20–0:50 refusal beat so the "Not yet" line
 is the clearest audio moment in the video.
 
