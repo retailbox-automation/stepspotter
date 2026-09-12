@@ -29,6 +29,24 @@ CHAT_HTML = r"""<!doctype html>
     --bg:#eef0f4; --panel:#ffffff; --ink:#15181e; --dim:#5d6572; --line:#dfe3ea;
     --act:#12804a; --actbg:#e8f6ee; --avoid:#c62a30; --avoidbg:#fdecec;
     --stop:#b45309; --stopbg:#fdf3e3; --accent:#1f5fd6; --mine:#dbe7fb;
+    --gatebg:#f1f3f7; --gateline:#d8dde6; --field:#ffffff;
+    /* One 8px rhythm for the chat chrome, and one type scale. Every margin and pad
+       below is 4, 8, 12, 16 or 24 — nothing in between, so the feed reads as one
+       column instead of a stack of slightly different cards. The step card keeps its
+       own measurements on purpose: it is the reference sheet, not chat furniture. */
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+    --f-cap:12px; --f-xs:13px; --f-sm:15px; --f-base:17px; --f-lg:19px;
+  }
+  /* The same page after dark. Only tokens move: the hues of the three meanings
+     (green = do this, red = leave alone, orange = stop) are lifted, not swapped, so a
+     photo with a red box drawn into the JPEG still matches the red word beside it. */
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1217; --panel:#171b22; --ink:#eef1f6; --dim:#a3adbb; --line:#2a313b;
+      --act:#4ecf8f; --actbg:#14301f; --avoid:#ff8e90; --avoidbg:#38191b;
+      --stop:#f0b45f; --stopbg:#35240f; --accent:#7aa8ff; --mine:#1c2a44;
+      --gatebg:#1b2029; --gateline:#303845; --field:#11151b;
+    }
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -40,34 +58,59 @@ CHAT_HTML = r"""<!doctype html>
 
   /* ---- header: who is talking, where we are, and the way to the receipts ---- */
   header{flex:0 0 auto;background:var(--panel);border-bottom:1px solid var(--line);
-         padding:10px 14px;display:flex;align-items:center;gap:10px}
-  .dot{width:34px;height:34px;border-radius:11px;background:var(--act);color:#fff;
+         padding:var(--s3) var(--s4);display:flex;align-items:center;gap:var(--s3)}
+  .dot{width:32px;height:32px;border-radius:10px;background:var(--act);color:#fff;
        display:grid;place-items:center;font-weight:700;flex:0 0 auto}
-  .who{min-width:0}
-  .who b{display:block;font-size:16px;line-height:1.2}
-  .who span{display:block;color:var(--dim);font-size:13px;white-space:nowrap;
-            overflow:hidden;text-overflow:ellipsis}
-  .why{margin-left:auto;flex:0 0 auto;background:none;border:1px solid var(--line);
-       color:var(--dim);font:inherit;font-size:14px;padding:7px 12px;border-radius:999px}
+  .who{min-width:0;flex:1 1 auto}
+  .who b{display:block;font-size:var(--f-base);line-height:1.2}
+  /* The job title may be long and is allowed to ellipsis. "Step 2 of 3" is not: it
+     used to share one nowrap line with the title and was the half that got eaten at
+     390px, which is exactly the half telling you where you are. It is its own
+     non-shrinking chip now. */
+  .who .line{display:flex;align-items:center;gap:var(--s2);min-width:0}
+  #sub{flex:1 1 auto;min-width:0;color:var(--dim);font-size:var(--f-xs);
+       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stepnow{flex:0 0 auto;white-space:nowrap;background:var(--actbg);color:var(--act);
+           font-size:var(--f-cap);font-weight:700;padding:2px var(--s2);border-radius:999px}
+  .why{flex:0 0 auto;background:none;border:1px solid var(--line);
+       color:var(--dim);font:inherit;font-size:var(--f-sm);padding:var(--s2) var(--s3);
+       border-radius:999px}
 
   /* ---- the feed ---- */
-  .feed{flex:1 1 auto;overflow-y:auto;padding:14px 12px 6px;-webkit-overflow-scrolling:touch}
-  .msg{margin:0 0 12px;max-width:92%;animation:in .18s ease-out}
+  .feed{flex:1 1 auto;overflow-y:auto;padding:var(--s4) var(--s3) var(--s2);
+        -webkit-overflow-scrolling:touch}
+
+  /* ---- one message, three actors ----------------------------------------
+     Every message carries data-role, and the role decides the side, the colour and
+     the name printed over it. Three actors and no fourth: the person, the agent, and
+     the gate — which is code, not the model. Blurring the third into the second is
+     how a demo ends up looking like the model politely declined, when in fact a hook
+     cancelled the tool call and the model was never asked. */
+  .msg{margin:0 0 var(--s4);max-width:92%;animation:in .18s ease-out}
   @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .msg.you{margin-left:auto}
+  .msg[data-role="you"]{margin-left:auto}
+  .by{display:flex;align-items:center;gap:var(--s2);margin:0 0 var(--s1);
+      color:var(--dim);font-size:var(--f-cap);letter-spacing:.3px}
+  .by i{width:18px;height:18px;border-radius:6px;display:grid;place-items:center;
+        font-style:normal;font-size:11px;font-weight:800;color:#fff;background:var(--act)}
+  .msg[data-role="you"] .by{flex-direction:row-reverse}
+  .msg[data-role="you"] .by i{background:var(--accent)}
+  .msg[data-role="gate"] .by{justify-content:center}
+  .msg[data-role="gate"] .by i{background:var(--dim)}
   .bubble{background:var(--panel);border:1px solid var(--line);border-radius:16px;
-          padding:12px 14px;border-bottom-left-radius:5px}
-  .you .bubble{background:var(--mine);border-color:#c9daf7;border-bottom-left-radius:16px;
-               border-bottom-right-radius:5px}
-  .you .bubble img{border-radius:11px;display:block;width:100%}
-  .cap{color:var(--dim);font-size:13px;margin-top:6px}
+          padding:var(--s3) var(--s4);border-bottom-left-radius:5px}
+  [data-role="you"] .bubble{background:var(--mine);border-color:var(--line);
+               border-bottom-left-radius:16px;border-bottom-right-radius:5px}
+  [data-role="you"] .bubble img{border-radius:11px;display:block;width:100%}
+  .cap{color:var(--dim);font-size:var(--f-xs);margin-top:var(--s2)}
 
   /* ---- the step card: the reference sheet, in a bubble ---- */
   .step{background:var(--panel);border:1px solid var(--line);border-radius:16px;
         border-bottom-left-radius:5px;overflow:hidden}
   .step .head{padding:12px 14px 10px}
   .chip{display:inline-block;background:var(--actbg);color:var(--act);font-weight:700;
-        font-size:13px;letter-spacing:.3px;padding:4px 10px;border-radius:999px}
+        font-size:var(--f-xs);letter-spacing:.3px;padding:4px 10px;border-radius:999px;
+        white-space:nowrap}
   .step h2{font-size:19px;margin:8px 0 0;line-height:1.25}
   .step img{width:100%;display:block;background:#e9ecf1}
   .shotnote{color:var(--dim);font-size:13px;padding:7px 14px 0}
@@ -99,54 +142,82 @@ CHAT_HTML = r"""<!doctype html>
   .r .link{margin-top:6px;color:var(--stop);opacity:1;font-weight:600}
 
   /* ---- verdicts, refusals, notes ---- */
-  .verdict{border-radius:16px;border-bottom-left-radius:5px;padding:12px 14px;border:1px solid}
-  .verdict h3{margin:0 0 4px;font-size:17px}
-  .v-pass{background:var(--actbg);border-color:#b9e2cc;color:#0d5f37}
-  .v-fail{background:var(--avoidbg);border-color:#f3c6c8;color:#8f1f24}
-  .v-halt{background:var(--stopbg);border-color:#f0d9ac;color:#8a3f06}
-  .note{background:#eef2fb;border:1px solid #d6e0f5;border-radius:14px;padding:10px 12px;
-        color:#274b8f;font-size:15px}
-  .note a{color:#274b8f}
+  .verdict{border-radius:16px;border-bottom-left-radius:5px;padding:var(--s3) var(--s4);
+           border:1px solid}
+  .verdict h3{margin:0 0 var(--s1);font-size:var(--f-base)}
+  .v-pass{background:var(--actbg);border-color:var(--act);color:var(--act)}
+  .v-fail{background:var(--avoidbg);border-color:var(--avoid);color:var(--avoid)}
+  .v-halt{background:var(--stopbg);border-color:var(--stop);color:var(--stop)}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+        border-radius:12px;padding:var(--s3) var(--s4);color:var(--dim);font-size:var(--f-sm)}
+  .note a{color:var(--accent)}
+
+  /* The gate speaks in its own shape: centred, neutral, a step smaller than the
+     agent's verdicts. It is deliberately NOT another coloured verdict card — a
+     refusal written by code should not look like one more opinion in the stream. */
+  .msg[data-role="gate"]{max-width:100%;margin-left:auto;margin-right:auto;text-align:center}
+  .gatebox{display:inline-block;text-align:left;max-width:94%;background:var(--gatebg);
+           border:1px solid var(--gateline);border-radius:12px;
+           padding:var(--s2) var(--s3);color:var(--dim);font-size:var(--f-sm)}
+  .gatebox b{display:block;color:var(--ink);font-size:var(--f-sm)}
+  .gatebox p{margin:var(--s1) 0 0}
+  .gatebox.haz{border-left:3px solid var(--stop)}
+  .gatebox.haz b{color:var(--stop)}
 
   /* ---- composer: one action, and a place to ask ---- */
   .composer{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);
-            padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
-  textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;
-           font:inherit;resize:none;min-height:76px;background:#fff;color:var(--ink)}
-  .shot{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;
-        border:1px dashed var(--line);border-radius:14px;padding:12px;color:var(--dim);
-        background:#fafbfd;font-size:15px}
-  .shot.has{border-style:solid;color:var(--ink);background:var(--actbg);border-color:#b9e2cc}
+            padding:var(--s3) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom))}
+  textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:var(--s3);
+           font:inherit;resize:none;min-height:76px;background:var(--field);color:var(--ink)}
+  .shot{display:flex;align-items:center;gap:var(--s3);width:100%;margin-top:var(--s2);
+        border:1px dashed var(--line);border-radius:14px;padding:var(--s3);color:var(--dim);
+        background:var(--field);font-size:var(--f-sm)}
+  .shot.has{border-style:solid;color:var(--ink);background:var(--actbg);border-color:var(--act)}
+  /* The photo they are about to send, actually shown. "Photo ready" is a promise;
+     a thumbnail is the only way to catch the shot of your own shoes before it costs
+     a model call and half a minute of standing there. */
+  .shot img{width:56px;height:56px;flex:0 0 auto;object-fit:cover;border-radius:10px;
+            display:block;background:var(--gatebg)}
+  .shot .icon{font-size:22px;line-height:1}
   /* Scoped to the element: a bare .act also matches the green "do this" row in a
      step card and the legend badges, and the button's blue then painted over them. */
-  button.act{display:block;width:100%;margin-top:9px;border:0;border-radius:14px;padding:16px;
-       background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:17px}
+  button.act{display:block;width:100%;margin-top:var(--s2);border:0;border-radius:14px;
+       padding:var(--s4);background:var(--accent);color:#fff;font:inherit;font-weight:700;
+       font-size:var(--f-base)}
   button.act.danger{background:var(--stop)}
   button.act:disabled,button.ghost:disabled{opacity:.45}
-  .askrow{display:flex;gap:8px;margin-top:9px;align-items:center}
+  .askrow{display:flex;gap:var(--s2);margin-top:var(--s2);align-items:center}
   .askrow input{flex:1 1 auto;min-width:0;border:1px solid var(--line);border-radius:999px;
-                padding:11px 14px;font:inherit;font-size:15px;background:#fff;color:var(--ink)}
-  .askrow button{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--dim);
-                 border-radius:999px;padding:11px 14px;font:inherit;font-size:15px}
-  .hint{color:var(--dim);font-size:13px;margin:8px 2px 0;text-align:center}
-  .err{color:var(--avoid);font-size:14px;margin:8px 2px 0}
+                padding:var(--s3) var(--s4);font:inherit;font-size:var(--f-sm);
+                background:var(--field);color:var(--ink)}
+  .askrow button{flex:0 0 auto;border:1px solid var(--line);background:var(--field);
+                 color:var(--dim);border-radius:999px;padding:var(--s3) var(--s4);
+                 font:inherit;font-size:var(--f-sm)}
+  .hint{color:var(--dim);font-size:var(--f-xs);margin:var(--s2) var(--s1) 0;text-align:center}
+  .err{color:var(--avoid);font-size:var(--f-sm);margin:var(--s2) var(--s1) 0}
 
   /* ---- the no-camera demo: a judge with ten minutes and no panel ---- */
   /* Two buttons instead of one, and only here. The one-action rule is a rule about
      someone standing in front of an open panel with a phone in one hand; a judge at a
      desk has no camera to open, and the refusal is the thing they came to see, so both
      packaged photos have to be reachable without guessing which to press first. */
-  button.ghost{display:block;width:100%;margin-top:9px;border:1px solid var(--line);
-       border-radius:14px;padding:15px;background:#fff;color:var(--ink);font:inherit;
-       font-weight:600;font-size:16px}
-  .democap{color:var(--dim);font-size:13px;margin:4px 2px 0;text-align:center}
-  .trydemo{margin-top:9px}
+  button.ghost{display:block;width:100%;margin-top:var(--s2);border:1px solid var(--line);
+       border-radius:14px;padding:var(--s4);background:var(--field);color:var(--ink);
+       font:inherit;font-weight:600;font-size:var(--f-base)}
+  .democap{color:var(--dim);font-size:var(--f-xs);margin:var(--s1) var(--s1) 0;text-align:center}
+  .trydemo{margin-top:var(--s2)}
 
   /* ---- typing + trace sheet ---- */
-  .typing{display:flex;gap:4px;padding:14px}
-  .typing i{width:7px;height:7px;border-radius:50%;background:#b7bec9;animation:b 1s infinite}
+  .typing{display:flex;gap:var(--s1);padding:var(--s4)}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--dim);animation:b 1s infinite}
   .typing i:nth-child(2){animation-delay:.15s} .typing i:nth-child(3){animation-delay:.3s}
   @keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+  /* Said out loud only after five seconds of silence: under that, a line of text
+     appearing and vanishing is noise. After it, dots alone read as a hang. */
+  .stage{padding:var(--s3) var(--s4);color:var(--dim);font-size:var(--f-sm)}
+  .stage b{color:var(--ink);font-weight:600}
+  .stage .secs{font-variant-numeric:tabular-nums}
+  .stage small{display:block;margin-top:var(--s1);font-size:var(--f-xs)}
   .sheet{position:fixed;inset:0;background:#0a0c1088;display:none;z-index:20}
   .sheet.on{display:block}
   .sheet .inner{position:absolute;left:0;right:0;bottom:0;top:8%;background:var(--panel);
@@ -157,8 +228,9 @@ CHAT_HTML = r"""<!doctype html>
         font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
   .sheet li{border-top:1px solid var(--line);padding:9px 0;color:var(--dim);word-break:break-word}
   .sheet li b{color:var(--ink)}
-  .sheet .close{margin:0 16px 16px;border:1px solid var(--line);background:#fff;color:var(--ink);
-        border-radius:14px;padding:14px;font:inherit;font-weight:600}
+  .sheet .close{margin:0 var(--s4) var(--s4);border:1px solid var(--line);
+        background:var(--field);color:var(--ink);border-radius:14px;padding:var(--s4);
+        font:inherit;font-weight:600}
   .hide{display:none !important}
 </style>
 </head>
@@ -167,7 +239,10 @@ CHAT_HTML = r"""<!doctype html>
 
 <header>
   <div class="dot">1</div>
-  <div class="who"><b>StepSpotter</b><span id="sub">one step at a time, on your photo</span></div>
+  <div class="who"><b>StepSpotter</b>
+    <div class="line"><span id="sub">one step at a time, on your photo</span>
+      <span class="stepnow hide" id="stepNow"></span></div>
+  </div>
   <button class="why" id="whyBtn">why</button>
 </header>
 
@@ -178,7 +253,9 @@ CHAT_HTML = r"""<!doctype html>
   <div id="startBox">
     <textarea id="task" placeholder="What do you want to do? Write it how you would say it."></textarea>
     <label class="shot" id="shotLabel" for="startPhoto">
-      <span>&#128247;</span><span id="shotText">Take a photo of the thing</span>
+      <span class="icon" id="shotIcon">&#128247;</span>
+      <img class="hide" id="shotThumb" alt="the photo you are about to send">
+      <span id="shotText">Take a photo of the thing</span>
     </label>
     <input id="startPhoto" type="file" accept="image/*" capture="environment" class="hide">
     <button class="ghost trydemo hide" id="demoBtn">Try a demo job</button>
@@ -233,13 +310,44 @@ function clearFail(){ $("err").classList.add("hide"); }
 function atBottom(){ const f = $("feed"); return f.scrollHeight - f.scrollTop - f.clientHeight < 120; }
 function toBottom(){ const f = $("feed"); f.scrollTop = f.scrollHeight; }
 
-function typing(on){
+// What is actually happening while the screen is quiet. The server streams no
+// progress, so these are honest timer captions over the real sequence the job runs:
+// a plan looks up the manual and then writes steps; a photo is checked against what
+// the step asked for. The seconds counter is the part that proves it is still alive.
+const PLAN_STAGES  = ["Searching for the manual…", "Planning the steps…"];
+const CHECK_STAGES = ["Checking your photo…", "Comparing it with what the step asked for…"];
+const ASK_STAGES   = ["Reading this step…", "Writing an answer…"];
+const GATE_STAGES  = ["Asking to open the next step…"];
+const QUIET_MS = 5000;   // under this, a line of text that appears and goes is noise
+const STAGE_MS = 9000;
+
+let STAGE_TIMERS = [];
+function stopStages(){ STAGE_TIMERS.forEach(clearInterval); STAGE_TIMERS.forEach(clearTimeout);
+                       STAGE_TIMERS = []; }
+
+function typing(on, stages, note){
+  stopStages();
   const old = $("typing"); if(old) old.remove();
   if(!on) return;
   const d = document.createElement("div");
-  d.id = "typing"; d.className = "msg"; d.innerHTML =
+  d.id = "typing"; d.className = "msg"; d.dataset.role = "agent"; d.innerHTML =
     '<div class="bubble typing"><i></i><i></i><i></i></div>';
   $("feed").appendChild(d); toBottom();
+  if(!stages || !stages.length) return;
+
+  const t0 = Date.now(); let i = 0, spoken = false;
+  const paint = () => {
+    if(!spoken) return;
+    const box = $("typing"); if(!box) return;
+    const secs = Math.round((Date.now() - t0) / 1000);
+    box.innerHTML = '<div class="bubble stage"><b>' + esc(stages[i]) + '</b> '
+      + '<span class="secs">' + secs + 's</span>'
+      + (note ? '<small>' + esc(note) + '</small>' : '') + '</div>';
+  };
+  STAGE_TIMERS.push(setTimeout(() => { spoken = true; paint();
+    STAGE_TIMERS.push(setInterval(paint, 1000));
+    STAGE_TIMERS.push(setInterval(() => { if(i < stages.length - 1){ i++; paint(); } }, STAGE_MS));
+  }, QUIET_MS));
 }
 
 function legend(items){
@@ -250,10 +358,37 @@ function legend(items){
     + '</span></li>').join("") + '</ul>';
 }
 
+// ---- who is speaking --------------------------------------------------------
+// Three actors, and the third one matters: a refusal comes from the gate, which is a
+// Strands hook cancelling the tool call in code. Printing it as the agent's would sell
+// the whole mechanic short — it would read as the model choosing to be careful.
+const ACTORS = {
+  you:   {label:"You",                        initial:"Y"},
+  agent: {label:"StepSpotter",                initial:"1"},
+  gate:  {label:"Gate (code, not the model)", initial:"\u2716"}
+};
+function roleOf(m){
+  if(m.from === "you") return "you";
+  if(m.kind === "block") return "gate";
+  return "agent";
+}
+let LAST_ROLE = null;
+// The name is printed when the speaker changes, not on every bubble: four "StepSpotter"
+// labels down one answer is chrome, and the point is only ever to mark the hand-off.
+function byline(role){
+  if(role === LAST_ROLE) return "";
+  const a = ACTORS[role];
+  return '<div class="by"><i>' + a.initial + '</i>' + esc(a.label) + '</div>';
+}
+
 // ---- one message -> one node ------------------------------------------------
 function node(m){
   const wrap = document.createElement("div");
-  wrap.className = "msg " + (m.from === "you" ? "you" : "");
+  const role = roleOf(m);
+  wrap.className = "msg";
+  wrap.dataset.role = role;
+  const by = byline(role);
+  LAST_ROLE = role;
   const stick = atBottom();
 
   if(m.kind === "step"){
@@ -307,9 +442,11 @@ function node(m){
       + esc(m.reason) + '</p>' + skip + '</div>';
   }
   else if(m.kind === "block"){
-    wrap.innerHTML = '<div class="verdict ' + (m.hazard ? "v-halt" : "v-fail") + '">'
-      + '<h3>' + (m.hazard ? "Stopped for a person" : "I am not opening the next step") + '</h3>'
-      + '<p>' + esc(m.reason) + '</p></div>';
+    // Not another coloured verdict card: a smaller, neutral, centred block, because
+    // this one was not written by the model at all.
+    wrap.innerHTML = '<div class="gatebox' + (m.hazard ? " haz" : "") + '">'
+      + '<b>' + (m.hazard ? "Stopped for a person" : "Refused — no photo has passed for this step")
+      + '</b><p>' + esc(m.reason) + '</p></div>';
   }
   else if(m.kind === "vendor"){
     wrap.innerHTML = '<div class="verdict v-halt"><h3>Please do not do this one yourself</h3>'
@@ -337,6 +474,7 @@ function node(m){
     wrap.innerHTML = '<div class="bubble">' + esc(m.text) + '</div>';
   }
 
+  wrap.insertAdjacentHTML("afterbegin", by);
   $("feed").appendChild(wrap);
   if(stick) toBottom();
   return wrap;
@@ -357,10 +495,11 @@ function draw(payload){
   }
   SHOWN = msgs.length;
   composer(payload.composer || {});
-  $("sub").textContent = JOB.job_title
-    ? (JOB.step_number ? JOB.job_title + " · step " + JOB.step_number + " of " + JOB.total
-                       : JOB.job_title)
-    : "one step at a time, on your photo";
+  // Two elements, not one string: the title may ellipsis, the step counter may not.
+  $("sub").textContent = JOB.job_title || "one step at a time, on your photo";
+  const chip = $("stepNow");
+  chip.textContent = JOB.step_number ? ("Step " + JOB.step_number + " of " + JOB.total) : "";
+  chip.classList.toggle("hide", !JOB.step_number);
   // Land on the TOP of the first new message, not the bottom of the feed: a step card
   // is taller than a phone, and bottom-anchoring it hides the photo it is built around.
   if(anchor) anchor.scrollIntoView({block:"start"}); else toBottom();
@@ -386,8 +525,10 @@ function composer(c){
 }
 
 function startMode(){
-  MODE = "start"; SHOWN = 0; JOB = null;
+  MODE = "start"; SHOWN = 0; JOB = null; LAST_ROLE = null;
   $("feed").innerHTML = "";
+  $("stepNow").classList.add("hide");
+  clearShot();
   node({from:"agent", kind:"text",
         text:"Tell me what you want to do, and show me a photo of it. I will give you "
            + "one step at a time, drawn on your own photo."});
@@ -405,10 +546,26 @@ function startMode(){
 async function refresh(){ draw(await api("/api/jobs/" + JOB.job_id + "/feed")); }
 
 // ---- actions ---------------------------------------------------------------
+function clearShot(){
+  $("startPhoto").value = "";
+  $("shotText").textContent = "Take a photo of the thing";
+  $("shotLabel").classList.remove("has");
+  $("shotThumb").classList.add("hide"); $("shotThumb").removeAttribute("src");
+  $("shotIcon").classList.remove("hide");
+}
 $("startPhoto").addEventListener("change", e => {
   const f = e.target.files[0];
-  $("shotText").textContent = f ? "Photo ready" : "Take a photo of the thing";
-  $("shotLabel").classList.toggle("has", !!f);
+  if(!f) return clearShot();
+  $("shotText").textContent = "Photo ready — tap to change";
+  $("shotLabel").classList.add("has");
+  // Read it in the browser and show it. Nothing is uploaded until they press the
+  // button, so this costs one FileReader and catches the shot of the wrong thing.
+  const fr = new FileReader();
+  fr.onload = () => { $("shotThumb").src = fr.result;
+                      $("shotThumb").classList.remove("hide");
+                      $("shotIcon").classList.add("hide"); };
+  fr.onerror = () => { $("shotText").textContent = "Photo ready"; };
+  fr.readAsDataURL(f);
 });
 
 async function doStart(){
@@ -420,8 +577,8 @@ async function doStart(){
   // the wait for a plan is half a minute and a silent screen reads as a hang.
   node({from:"you", kind:"text", text:task});
   const fd = new FormData(); fd.append("task", task); fd.append("photo", file);
-  $("hint").textContent = "Looking at your photo. This takes about half a minute.";
-  typing(true);
+  $("hint").textContent = "";
+  typing(true, PLAN_STAGES, "Usually 20–40 seconds. These are live model calls, not a recording.");
   await planned(await api("/api/jobs", {method:"POST", body:fd}));
 }
 
@@ -429,14 +586,14 @@ async function doStart(){
 // and let the server's feed be the whole transcript from here on.
 async function planned(created){
   history.replaceState(null, "", "?job=" + created.job_id);
-  JOB = created; SHOWN = 0; $("feed").innerHTML = "";
+  JOB = created; SHOWN = 0; LAST_ROLE = null; $("feed").innerHTML = "";
   $("hint").textContent = "";
   await refresh();
 }
 
 async function doDemoPhoto(which, btn){
   BUSY = true; btn.disabled = true; clearFail();
-  typing(true);
+  typing(true, CHECK_STAGES, "The real checker, on a photo from the repo.");
   try { await api("/api/jobs/" + JOB.job_id + "/demo-photo",
                   {method:"POST", body:new URLSearchParams({which:which})});
         await refresh(); }
@@ -446,21 +603,25 @@ async function doDemoPhoto(which, btn){
 
 async function doPhoto(file){
   const fd = new FormData(); fd.append("photo", file);
-  typing(true);
+  typing(true, CHECK_STAGES, "Usually a few seconds.");
   await api("/api/jobs/" + JOB.job_id + "/photo", {method:"POST", body:fd});
   await refresh();
 }
 
-async function doAdvance(){
-  typing(true);
-  await api("/api/jobs/" + JOB.job_id + "/advance", {method:"POST"});
+// One road to the gate. "Next step" and "move on anyway" are the same POST; ``intent``
+// only labels WHY it was asked, so the trace can tell a pass being collected apart from
+// someone trying to close a step on their word. The gate never sees it and never cares.
+async function doAdvance(intent){
+  typing(true, GATE_STAGES);
+  await api("/api/jobs/" + JOB.job_id + "/advance",
+            {method:"POST", body:new URLSearchParams({intent: intent || "next"})});
   await refresh();     // a refusal is a trace row, so it arrives as a message like any other
 }
 
 async function doEscalate(){
   const fd = new FormData();
   fd.append("reason", "The person pressed Stop on their phone.");
-  typing(true);
+  typing(true, GATE_STAGES);
   await api("/api/jobs/" + JOB.job_id + "/escalate", {method:"POST", body:fd});
   await refresh();
 }
@@ -472,7 +633,7 @@ $("actBtn").addEventListener("click", async () => {
   BUSY = true; $("actBtn").disabled = true; clearFail();
   try {
     if(MODE === "start")         await doStart();
-    else if(MODE === "advance")  await doAdvance();
+    else if(MODE === "advance")  await doAdvance("next");
     else if(MODE === "escalate") await doEscalate();
   } catch(err){ typing(false); fail(err.message); $("actBtn").disabled = false; }
   finally { BUSY = false; }
@@ -489,7 +650,7 @@ $("stepPhoto").addEventListener("change", async (e) => {
 async function doAsk(){
   const q = $("ask").value.trim(); if(!q || !JOB) return;
   $("ask").value = ""; clearFail();
-  typing(true);
+  typing(true, ASK_STAGES);
   try { await api("/api/jobs/" + JOB.job_id + "/ask",
                   {method:"POST", body:new URLSearchParams({question:q})});
         await refresh(); }
@@ -501,7 +662,7 @@ $("feed").addEventListener("click", async (e) => {
   const btn = e.target.closest("button.link"); if(!btn || BUSY || !JOB) return;
   const act = btn.dataset.act;
   BUSY = true; btn.disabled = true; clearFail();
-  try { if(act === "advance") await doAdvance(); else if(act === "escalate") await doEscalate(); }
+  try { if(act === "advance") await doAdvance("skip"); else if(act === "escalate") await doEscalate(); }
   catch(err){ typing(false); fail(err.message); }
   finally { BUSY = false; }
 });

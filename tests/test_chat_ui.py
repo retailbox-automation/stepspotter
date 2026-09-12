@@ -404,3 +404,96 @@ def test_the_way_out_is_always_on_the_card(client):
     client.post(f"/api/jobs/{jid}/advance")
     step2 = [m for m in _feed(client, jid)["messages"] if m["kind"] == "step"][-1]
     assert step2["step_number"] == 2 and step2["stop_condition"] is None
+
+
+# ------------------------------------------------------- three actors, one of them code
+# The feed's whole claim is "you can see who said what". There are three speakers and
+# the third is the one that carries the product: a Strands hook cancelling a tool call.
+# If a refusal is printed in the agent's colours with the agent's name over it, the demo
+# reads as a careful model — which is the one thing this project is not.
+def test_the_feed_names_three_actors_and_marks_each_message_with_its_role(client):
+    body = client.get("/chat").text
+    assert "wrap.dataset.role = role" in body           # every message is labelled
+    assert "function roleOf(m)" in body
+    for role in ('you:', 'agent:', 'gate:'):
+        assert role in body
+    assert '"Gate (code, not the model)"' in body
+    assert '"StepSpotter"' in body and '"You"' in body
+    # and the mapping that keeps the gate out of the agent's mouth
+    assert 'if(m.kind === "block") return "gate"' in body
+    # the three roles all have styling of their own, or the label is decoration
+    for sel in ('[data-role="you"]', '[data-role="gate"]'):
+        assert sel in body
+
+
+def test_a_refusal_is_drawn_as_the_gate_and_not_as_another_verdict_card(client):
+    """The refused skip, end to end: the trace records the ask, the feed shows the gate."""
+    jid = _new_job(client)
+
+    res = client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"})
+    assert res.json()["blocked"] is True
+
+    # the ask is on the record, and the refusal under it
+    events = [r["event"] for r in client.get(f"/api/jobs/{jid}/trace").json()["rows"]]
+    assert events.index("skip_attempt") < events.index("gate_block")
+
+    # the feed carries the refusal as its own message, and it survives a reload
+    blocks = [m for m in _feed(client, jid)["messages"] if m["kind"] == "block"]
+    assert len(blocks) == 1 and blocks[0]["hazard"] is False
+    assert blocks[0]["reason"]
+
+    # and the page draws a "block" in the gate's own shape, not as a verdict bubble
+    body = client.get("/chat").text
+    assert 'class="gatebox' in body
+    assert "Refused — no photo has passed for this step" in body
+    assert ".gatebox{" in body
+    # and it is no longer one of the coloured verdict cards it used to borrow
+    assert '(m.hazard ? "v-halt" : "v-fail")' not in body
+
+
+def test_move_on_anyway_takes_the_same_road_to_the_gate_as_next_step(client):
+    """One endpoint, one hook. ``intent`` only says why the ask happened."""
+    body = client.get("/chat").text
+    assert 'doAdvance("skip")' in body and 'doAdvance("next")' in body
+    assert 'new URLSearchParams({intent: intent || "next"})' in body
+    # exactly one place that posts to /advance — no second, looser road to the next step
+    assert body.count('"/advance"') == 1
+
+    # and the server treats the skip ask as an ask, not as a way through
+    jid = _new_job(client)
+    assert client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"}).json()["blocked"] is True
+    _send(client, jid)   # fails
+    _send(client, jid)   # passes
+    ok = client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"}).json()
+    assert ok["blocked"] is False and ok["job"]["step_number"] == 2
+
+
+# ------------------------------------------------------------------- the phone details
+def test_the_composer_shows_the_photo_it_is_about_to_send(client):
+    """"Photo ready" is a promise; a thumbnail is how you catch the wrong shot."""
+    body = client.get("/chat").text
+    assert "new FileReader()" in body and "readAsDataURL" in body
+    assert 'id="shotThumb"' in body
+    assert "Photo ready — tap to change" in body
+    assert ".shot img{" in body          # it is sized, not left at full width
+
+
+def test_the_step_counter_is_not_the_half_the_ellipsis_eats(client):
+    """At 390px the title may truncate. "Step 2 of 3" may not — it is where you are."""
+    body = client.get("/chat").text
+    assert 'id="stepNow"' in body
+    assert ".stepnow{flex:0 0 auto;white-space:nowrap" in body
+    # the title, and only the title, is the part allowed to ellipsis
+    assert "#sub{flex:1 1 auto;min-width:0" in body
+    assert "text-overflow:ellipsis" in body
+    # the card's own chip cannot wrap either
+    assert "border-radius:999px;\n        white-space:nowrap}" in body
+
+
+def test_a_long_wait_says_what_is_happening_rather_than_nothing(client):
+    body = client.get("/chat").text
+    assert "Searching for the manual…" in body and "Planning the steps…" in body
+    assert "Checking your photo…" in body
+    assert "const QUIET_MS = 5000" in body   # quiet first, then speak
+    assert '<span class="secs">' in body     # the counter that proves it is alive
+    assert "Usually 20–40 seconds" in body

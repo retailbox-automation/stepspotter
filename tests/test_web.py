@@ -252,7 +252,8 @@ def test_a_long_manual_url_cannot_push_the_page_sideways(client):
 # to read the tests. These cover the button that asks anyway — and the promise that the
 # same ask, once a photo HAS passed, still moves the step exactly as it always did.
 def test_the_step_card_offers_a_visible_way_to_ask_without_a_photo(client):
-    body = client.get("/").text
+    # "/" is form A now (see test_chat_ui.py); form B, which owns this button, is /steps.
+    body = client.get("/steps").text
     assert 'id="skipBtn"' in body and "Skip the photo and move on" in body
     # and it says what will happen, rather than looking like a shortcut that works
     assert "cancels the call in code" in body
