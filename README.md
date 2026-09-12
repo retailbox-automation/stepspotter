@@ -65,9 +65,10 @@ source: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 **Strands Agents** is the SDK end to end: typed `structured_output` for the
 Verifier's verdict (not free-text parsing), and a `BeforeToolCallEvent` hook for
-the gate itself — verified against strands-agents 1.54.0 by live introspection and
-real Bedrock calls, not from the docs alone (`spikes/SPIKE-A-RESULT.md`,
-`spikes/SPIKE-B-RESULT.md`).
+the gate itself — verified by live introspection of the running SDK and real Bedrock
+calls, not from the docs alone (`spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md`).
+The SDK is pinned: **strands-agents 1.55.0**, the same version the deployed image runs,
+and the whole offline suite is green on it.
 
 ## Grounded in the manufacturer's manual
 
@@ -132,7 +133,7 @@ Every line below is in this repository; nothing here is aspirational.
 | Strands API | Where | What it does here |
 |---|---|---|
 | `Agent(...)` + `strands.models.BedrockModel` | `src/stepspotter/vision.py:65-66` | every vision call — planning, marking, verifying — goes through one Strands agent on Amazon Bedrock |
-| `structured_output_model=` on the invocation, read back as `result.structured_output` | `src/stepspotter/vision.py:84-85` | typed objects instead of parsed text. `Agent.structured_output(...)` is deprecated in 1.54.0; this is the current call shape |
+| `structured_output_model=` on the invocation, read back as `result.structured_output` | `src/stepspotter/vision.py:84-85` | typed objects instead of parsed text. `Agent.structured_output(...)` is deprecated; this is the current call shape |
 | Typed outputs in use | `src/stepspotter/planner.py:90` (`Plan`), `src/stepspotter/verifier.py:53` (`StepVerdict`) | the plan and the pass/fail verdict are Pydantic models the SDK fills, not free text a regex has to survive |
 | `HookProvider` + `registry.add_callback(BeforeToolCallEvent, ...)` | `src/stepspotter/gate.py:30, 47-50` | the gate registers itself in front of every tool call |
 | `event.cancel_tool = "<reason>"` | `src/stepspotter/gate.py:81` | the refusal itself: `advance_step` is cancelled in code, and the string is the message the user reads |
@@ -322,10 +323,20 @@ decides whether "Next step" is allowed. No verdict is canned, and because the mo
 not deterministic the plan differs run to run — the page shows whatever actually came
 back.
 
+**Want to see the lock itself? Try to skip a photo.** Every step carries a *Skip the
+photo and move on* button. Press it and the answer comes back from the gate — a Strands
+`BeforeToolCallEvent` hook cancelling `advance_step` in code — with the reason in plain
+words and the photo it is waiting for. *See what it did* then shows the two halves
+separately: **You — asked to move on without sending a photo**, then **Gate (code, not
+the model) — refused**. It is the only way to reach that refusal from a browser, since
+*Next step* appears only after a photo has passed. It costs nothing: `advance` calls no
+model and is not rate-limited.
+
 | Endpoint | What it does |
 |---|---|
 | `POST /api/demo/jobs` | start the demo job on the packaged start photo |
 | `POST /api/jobs/{id}/demo-photo` (`which=wrong\|right`) | send a packaged photo to the real Verifier |
+| `POST /api/jobs/{id}/advance` (`intent=skip`) | ask to move on with no photo behind it — the gate refuses, and the ask is on the trace |
 | `GET /api/jobs/{id}/trace?view=human` | who did what, what came back, why — no paths, no ids |
 | `GET /api/jobs/{id}/trace?view=raw` | the operator's log, behind the page's "raw" link |
 

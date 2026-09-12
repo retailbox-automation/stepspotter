@@ -12,6 +12,7 @@ Endpoints (all JSON except the two image routes and ``/``):
     POST /api/jobs/{id}/photo       multipart: photo         -> verifier verdict
     POST /api/jobs/{id}/demo-photo  the same, on a packaged photo instead of a camera
     POST /api/jobs/{id}/advance     GATED, through the Strands hook (see gated.py)
+                                    intent=skip marks an ask with no photo behind it
     POST /api/jobs/{id}/escalate    stop and hand to a person
     GET  /api/jobs/{id}/evidence/N  the photo the person sent for step N
     GET  /api/jobs/{id}/trace       every tool call and refusal, in order
@@ -263,9 +264,25 @@ def create_app(service: JobService | None = None) -> FastAPI:
         return await _verify_photo(job_id, await photo.read())
 
     @app.post("/api/jobs/{job_id}/advance")
-    def advance(job_id: str) -> JSONResponse:
-        """Ask to move on. The gate hook decides, exactly as it does for the agent."""
+    def advance(job_id: str, intent: str = Form("next")) -> JSONResponse:
+        """Ask to move on. The gate hook decides, exactly as it does for the agent.
+
+        ``intent`` changes nothing about the decision — the gate never sees it. It
+        records WHY the ask happened, so the trace can tell "the photo passed and they
+        pressed Next" apart from "they pressed 'I did it' and sent no photo at all".
+        The page's skip button sends ``intent=skip``; that button exists so the refusal
+        is reachable from a browser, which until now it was not: with no passing photo
+        the Next button is simply hidden, and the one mechanic this project is built on
+        never appeared on screen.
+        """
         state = _job(job_id)
+        if intent == "skip":
+            store.trace(
+                job_id,
+                "skip_attempt",
+                step_id=state.current + 1,
+                asked="move on without sending a photo",
+            )
         res = advance_via_gate(gate, tools, job_id, state.current + 1)
         content = res.get("content")
         if res.get("cancelled"):

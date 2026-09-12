@@ -5,7 +5,12 @@ description = "One step at a time on your photo; next step unlocks only when a p
 requires-python = ">=3.12"
 license = {text = "MIT"}
 dependencies = [
-  "strands-agents>=1.54.0",
+  # Pinned, not floored. The floor (>=1.54.0) meant the version was decided by the
+  # clock: the ARM64 image built on 2026-09-11 resolved 1.55.0, a fresh install on
+  # 2026-09-12 resolves 1.55.1, and neither matched what the tests had run against.
+  # 1.55.0 is the version the deployed service runs, so the repo, the image and the
+  # test suite now name the same one. Moving it is a deliberate edit plus a test run.
+  "strands-agents==1.55.0",
   "strands-agents-tools>=0.8.7",
   "pillow>=11",
   "pypdf>=4",
