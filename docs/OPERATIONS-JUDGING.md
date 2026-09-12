@@ -93,9 +93,9 @@ not hypothetical.
 Not limited on purpose: `GET /` and `/healthz` (a health check you can rate-limit is a
 way to take your own service down), the card image (drawn once per step, then served
 from disk), advance, escalate, the trace. None of them call a model. That includes the
-step card's *Skip the photo and move on* button — the one that shows a judge the gate
-refusing in code: it rides `POST /api/jobs/<id>/advance`, so pressing it twenty times
-costs nothing and cannot exhaust anyone's hourly allowance.
+failed-verdict's **"It is fine — move on anyway"** link — the one that shows a judge the
+gate refusing in code: it rides `POST /api/jobs/<id>/advance`, so pressing it twenty
+times costs nothing and cannot exhaust anyone's hourly allowance.
 
 A refusal is **HTTP 429** with a readable body, and the page already renders it — the
 JS helper throws `body.detail` and every caller prints it and clears its spinner, so a

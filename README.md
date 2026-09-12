@@ -243,7 +243,7 @@ polite.
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
 | Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → from a fresh clone, **189 passed, 7 skipped** with the `agentcore` extra and **176 passed, 8 skipped** without it; on the machine that also holds the raw photo archive, 195 / 1 and 177 / 2 |
-| Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/`; a camera-free **Try a demo job** button for judges, a readable *See what it did* trace, and per-address + per-day spend caps in front of the two endpoints that call a model (`src/stepspotter/web/limits.py`, `docs/OPERATIONS-JUDGING.md`) |
+| Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/`; a camera-free **Try a demo job** button for judges, a readable **why** trace ("Everything it did"), and per-address + per-day spend caps in front of the two endpoints that call a model (`src/stepspotter/web/limits.py`, `docs/OPERATIONS-JUDGING.md`) |
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
 | Full 12-step eval set (`docs/EVAL-PLAN.md` §2, red-team R1–R6) | ⛔ Not run — waiting on evidence photos from the finished job |
@@ -323,14 +323,15 @@ decides whether "Next step" is allowed. No verdict is canned, and because the mo
 not deterministic the plan differs run to run — the page shows whatever actually came
 back.
 
-**Want to see the lock itself? Try to skip a photo.** Every step carries a *Skip the
-photo and move on* button. Press it and the answer comes back from the gate — a Strands
-`BeforeToolCallEvent` hook cancelling `advance_step` in code — with the reason in plain
-words and the photo it is waiting for. *See what it did* then shows the two halves
-separately: **You — asked to move on without sending a photo**, then **Gate (code, not
-the model) — refused**. It is the only way to reach that refusal from a browser, since
-*Next step* appears only after a photo has passed. It costs nothing: `advance` calls no
-model and is not rate-limited.
+**Want to see the lock itself? Try to skip a photo.** A failed verdict carries an
+**"It is fine — move on anyway"** link. Press it and the answer comes back from the
+gate — a Strands `BeforeToolCallEvent` hook cancelling `advance_step` in code — with the
+reason in plain words and the photo it is waiting for. The two halves land right in the
+chat as separate messages: **You — asked to move on without sending a photo**, then
+**Gate (code, not the model) — refused**; the **why** trace records the same two rows
+(`skip_attempt`, `gate_block`) for anyone who opens it later. It is the only way to reach
+that refusal from a browser, since *Next step* appears only after a photo has passed. It
+costs nothing: `advance` calls no model and is not rate-limited.
 
 | Endpoint | What it does |
 |---|---|

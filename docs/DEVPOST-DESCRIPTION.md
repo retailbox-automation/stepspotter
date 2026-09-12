@@ -167,7 +167,7 @@ buttons go straight to the rear camera. `/healthz` returns `{"ok":true,...}`.
   attach a photo. Not in front of a panel? Use `fixtures/onq-keystone-smoke/steps/*.jpg`,
   in order.
 - **The thing to try:** submit `fixtures/onq-keystone-smoke/redteam/R1-wrong-photo.jpg` as
-  evidence instead. Expected: a "Not yet" verdict naming what's missing, the step counter
+  evidence instead. Expected: a "Not done yet" verdict naming what's missing, the step counter
   unchanged, no way forward — `event.cancel_tool` firing in `src/stepspotter/gate.py`, and
   the trace shows it.
 - **The manual research, live on that same URL:** start a job with the task *"assemble
