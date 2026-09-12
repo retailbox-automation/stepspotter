@@ -133,6 +133,7 @@ _PAGE_TEMPLATE = r"""<!doctype html>
            background:#4f8cff10}
   .demobar p{margin:0 0 4px;font-size:14px;color:var(--dim)}
   .demobar .cap{font-size:13px}
+  .btncap{color:var(--dim);font-size:13px;margin:6px 2px 14px}
 </style>
 </head>
 <body>
@@ -197,6 +198,13 @@ _PAGE_TEMPLATE = r"""<!doctype html>
   <!-- Directly under the verdict on purpose: when a photo passes, the next thing to
        do must be the next thing on screen, not below two other buttons. -->
   <button id="nextBtn" class="hide">Next step</button>
+  <!-- The refusal has to be reachable from a browser. "Next step" only appears once a
+       photo has passed, so before this the gate — the one mechanic this whole project
+       is built on — never showed itself on screen to anyone who did not read the code.
+       This button asks anyway, with nothing to show for the step, and is refused. -->
+  <button id="skipBtn" class="ghost hide">Skip the photo and move on</button>
+  <p class="btncap hide" id="skipCap">Asks to close this step on your word alone. A
+     Strands hook cancels the call in code and says which photo it is waiting for.</p>
   <div class="demobar hide" id="demoBar">
     <p><b>Demo</b> — no camera needed. Two real photos, sent to the same checker:</p>
     <button class="ghost" id="demoWrongBtn">Send the wrong photo</button>
@@ -395,7 +403,12 @@ function render(){
       + '<img src="'+v.evidence_url+'?t='+Date.now()+'" alt="the photo you sent">'
       + '<h3>'+head+'</h3><p>'+esc(v.reason)+'</p></div>';
   } else { $("verdictBox").innerHTML = ""; }
-  $("nextBtn").classList.toggle("hide", !(v && v.passed && !v.stop));
+  // Exactly one way forward is on screen at a time: "Next step" once a photo has
+  // passed, and the skip button — which the gate will refuse — while none has.
+  const unlocked = !!(v && v.passed && !v.stop);
+  $("nextBtn").classList.toggle("hide", !unlocked);
+  $("skipBtn").classList.toggle("hide", unlocked);
+  $("skipCap").classList.toggle("hide", unlocked);
   $("photoBtn").innerHTML = v ? "Take another photo" : "I did it — take photo";
   // In demo mode the two repo photos replace the camera; everything else is identical.
   $("demoBar").classList.toggle("hide", !JOB.demo);
@@ -417,19 +430,32 @@ $("stepPhoto").addEventListener("change", async (e) => {
   finally { stop(); busy($("photoBtn"), false); e.target.value = ""; }
 });
 
-$("nextBtn").addEventListener("click", async () => {
-  busy($("nextBtn"), true, "Checking…");
+// Both buttons ask the same question, on the same endpoint, through the same hook.
+// intent=skip changes nothing about the answer — it only puts the ask on the trace, so
+// "the photo passed and they pressed Next" and "they pressed skip with nothing to show"
+// do not read as the same event afterwards. The refusal names the photo it wants,
+// because "no" without "then what?" is a dead end on a phone.
+async function askToAdvance(btn, intent){
+  busy(btn, true, "Checking…");
+  const opts = {method:"POST"};
+  if(intent === "skip"){ const fd = new FormData(); fd.append("intent", "skip"); opts.body = fd; }
   try {
-    const res = await api("/api/jobs/"+JOB.job_id+"/advance", {method:"POST"});
+    const res = await api("/api/jobs/"+JOB.job_id+"/advance", opts);
     JOB = res.job;
     if(res.blocked){
+      const need = (JOB && JOB.step) ? JOB.step.evidence_required : "";
       $("blockBox").innerHTML = '<div class="banner'+(res.hazard?" stopc":"")+'"><b>'
-        + (res.hazard ? "Stopped for a person" : "Not so fast") + '</b><p>'+esc(res.reason)+'</p></div>';
+        + (res.hazard ? "Stopped for a person" : "Blocked by the gate — no photo, no next step")
+        + '</b><p>'+esc(res.reason)+'</p>'
+        + (!res.hazard && need ? '<p class="muted">The photo it is waiting for: '+esc(need)+'</p>' : "")
+        + '</div>';
     } else { $("blockBox").innerHTML = ""; $("verdictBox").innerHTML = ""; }
     render();
   } catch(err){ $("blockBox").innerHTML = '<div class="banner">'+esc(err.message)+'</div>'; }
-  finally { busy($("nextBtn"), false); }
-});
+  finally { busy(btn, false); }
+}
+$("nextBtn").addEventListener("click", () => askToAdvance($("nextBtn"), "next"));
+$("skipBtn").addEventListener("click", () => askToAdvance($("skipBtn"), "skip"));
 
 $("stopBtn").addEventListener("click", async () => {
   const fd = new FormData(); fd.append("reason", "The person pressed Stop on their phone.");

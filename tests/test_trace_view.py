@@ -260,3 +260,12 @@ def test_a_lookup_with_nothing_to_look_up_does_not_read_as_a_fault():
     )
     assert row["result"] == "No lookup was possible"
     assert "no brand and model" in row["why"]
+
+
+def test_the_skip_ask_reads_as_the_person_asking_not_as_the_gate_answering():
+    """Two rows, two actors: the person asked, the code refused. Never one row."""
+    ask = humanize_row({"event": "skip_attempt", "step_id": 2, "asked": "move on without sending a photo",
+                        "at": "2026-09-12T10:00:00+00:00"})
+    assert ask["actor"] == "You" and "without sending a photo" in ask["what"]
+    assert "2" in ask["result"] and ask["at"] == "10:00:00"
+    assert_clean(" ".join(str(v) for v in ask.values()))

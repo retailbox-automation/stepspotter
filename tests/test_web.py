@@ -244,3 +244,68 @@ def test_a_long_manual_url_cannot_push_the_page_sideways(client):
     body = client.get("/steps").text
     assert "overflow-wrap:anywhere" in body
     assert "#manualLine a{display:inline-block;max-width:100%" in body
+
+
+# ------------------------------------------------- the refusal, from a browser
+# The gate is the point of this project, and until now a browser could not reach it:
+# "Next step" is hidden while no photo has passed, so the only way to see a refusal was
+# to read the tests. These cover the button that asks anyway — and the promise that the
+# same ask, once a photo HAS passed, still moves the step exactly as it always did.
+def test_the_step_card_offers_a_visible_way_to_ask_without_a_photo(client):
+    body = client.get("/").text
+    assert 'id="skipBtn"' in body and "Skip the photo and move on" in body
+    # and it says what will happen, rather than looking like a shortcut that works
+    assert "cancels the call in code" in body
+    assert 'id="skipCap"' in body
+
+
+def test_asking_to_skip_the_photo_is_refused_and_names_the_photo_it_wants(client):
+    job = _new_job(client)
+    jid = job["job_id"]
+
+    res = client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"})
+    assert res.status_code == 200
+    body = res.json()
+
+    assert body["blocked"] is True and body["hazard"] is False
+    assert "have not checked" in body["reason"]          # the refusal, in words
+    assert body["job"]["step_number"] == 1               # and nothing moved
+    # the page draws "the photo it is waiting for" from this field
+    assert body["job"]["step"]["evidence_required"] == "all eight wires seated in the jack, no loose ends"
+
+    # both halves of the story are on the record: the ask, then the code that refused it
+    events = [r["event"] for r in client.get(f"/api/jobs/{jid}/trace").json()["rows"]]
+    assert events.index("skip_attempt") < events.index("gate_block")
+
+    # and the readable trace says so without leaking a path or a job id
+    human = client.get(f"/api/jobs/{jid}/trace?view=human").json()["human"]
+    asked = [r for r in human if r["what"] == "Asked to move on without sending a photo"]
+    assert len(asked) == 1 and asked[0]["actor"] == "You"
+    assert any(r["actor"].startswith("Gate") for r in human)
+    text = " ".join(f"{r['actor']} {r['what']} {r['result']} {r['why']}" for r in human)
+    assert "/" not in text.replace("and/or", "") and ".jpg" not in text
+
+
+def test_the_same_ask_after_a_passing_photo_still_moves_the_step(client):
+    """intent only labels the ask. The gate never sees it, so a pass still advances."""
+    jid = _new_job(client)["job_id"]
+    client.post(f"/api/jobs/{jid}/photo", files={"photo": ("a.jpg", _photo_bytes(), "image/jpeg")})
+    passed = client.post(f"/api/jobs/{jid}/photo", files={"photo": ("b.jpg", _photo_bytes(), "image/jpeg")})
+    assert passed.json()["verdict"]["passed"] is True
+
+    ok = client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"}).json()
+    assert ok["blocked"] is False and ok["job"]["step_number"] == 2
+
+
+def test_the_skip_ask_works_on_the_demo_job_too(isolated_data):
+    """A judge with no camera must be able to reach the refusal from the demo flow."""
+    from stepspotter.web import demo as demo_mod
+
+    service = JobService(plan_fn=_plan, verify_fn=_Verifier(), locate_fn=lambda *a, **k: [])
+    client = TestClient(create_app(service))
+    if not demo_mod.available():
+        pytest.skip("demo photos are not installed in this checkout")
+
+    jid = client.post("/api/demo/jobs").json()["job_id"]
+    blocked = client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"}).json()
+    assert blocked["blocked"] is True and blocked["job"]["step_number"] == 1

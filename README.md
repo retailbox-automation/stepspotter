@@ -65,9 +65,10 @@ source: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 **Strands Agents** is the SDK end to end: typed `structured_output` for the
 Verifier's verdict (not free-text parsing), and a `BeforeToolCallEvent` hook for
-the gate itself — verified against strands-agents 1.54.0 by live introspection and
-real Bedrock calls, not from the docs alone (`spikes/SPIKE-A-RESULT.md`,
-`spikes/SPIKE-B-RESULT.md`).
+the gate itself — verified by live introspection of the running SDK and real Bedrock
+calls, not from the docs alone (`spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md`).
+The SDK is pinned: **strands-agents 1.55.0**, the same version the deployed image runs,
+and the whole offline suite is green on it.
 
 ## Grounded in the manufacturer's manual
 
@@ -132,7 +133,7 @@ Every line below is in this repository; nothing here is aspirational.
 | Strands API | Where | What it does here |
 |---|---|---|
 | `Agent(...)` + `strands.models.BedrockModel` | `src/stepspotter/vision.py:65-66` | every vision call — planning, marking, verifying — goes through one Strands agent on Amazon Bedrock |
-| `structured_output_model=` on the invocation, read back as `result.structured_output` | `src/stepspotter/vision.py:84-85` | typed objects instead of parsed text. `Agent.structured_output(...)` is deprecated in 1.54.0; this is the current call shape |
+| `structured_output_model=` on the invocation, read back as `result.structured_output` | `src/stepspotter/vision.py:84-85` | typed objects instead of parsed text. `Agent.structured_output(...)` is deprecated; this is the current call shape |
 | Typed outputs in use | `src/stepspotter/planner.py:90` (`Plan`), `src/stepspotter/verifier.py:53` (`StepVerdict`) | the plan and the pass/fail verdict are Pydantic models the SDK fills, not free text a regex has to survive |
 | `HookProvider` + `registry.add_callback(BeforeToolCallEvent, ...)` | `src/stepspotter/gate.py:30, 47-50` | the gate registers itself in front of every tool call |
 | `event.cancel_tool = "<reason>"` | `src/stepspotter/gate.py:81` | the refusal itself: `advance_step` is cancelled in code, and the string is the message the user reads |
@@ -241,7 +242,7 @@ polite.
 | Piece | Status |
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
-| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → from a fresh clone, **184 passed, 7 skipped** with the `agentcore` extra and **171 passed, 8 skipped** without it; on the machine that also holds the raw photo archive, 190 / 1 and 177 / 2 |
+| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → from a fresh clone, **189 passed, 7 skipped** with the `agentcore` extra and **176 passed, 8 skipped** without it; on the machine that also holds the raw photo archive, 195 / 1 and 177 / 2 |
 | Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/`; a camera-free **Try a demo job** button for judges, a readable *See what it did* trace, and per-address + per-day spend caps in front of the two endpoints that call a model (`src/stepspotter/web/limits.py`, `docs/OPERATIONS-JUDGING.md`) |
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
@@ -259,7 +260,7 @@ tested on 3.11 or older.
 git clone https://github.com/retailbox-automation/stepspotter && cd stepspotter
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-python -m pytest -q      # 171 passed, 8 skipped — no AWS account, no credentials, no network
+python -m pytest -q      # 176 passed, 8 skipped — no AWS account, no credentials, no network
 ```
 
 That is the whole cold start, and those numbers are from an actual fresh clone, not
@@ -272,7 +273,7 @@ Add the AgentCore door as well if you want those thirteen tests to run too:
 
 ```bash
 pip install -e ".[dev,agentcore]"
-python -m pytest -q                      # 184 passed, 7 skipped from a fresh clone
+python -m pytest -q                      # 189 passed, 7 skipped from a fresh clone
 python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract on its own
 ```
 
@@ -322,10 +323,20 @@ decides whether "Next step" is allowed. No verdict is canned, and because the mo
 not deterministic the plan differs run to run — the page shows whatever actually came
 back.
 
+**Want to see the lock itself? Try to skip a photo.** Every step carries a *Skip the
+photo and move on* button. Press it and the answer comes back from the gate — a Strands
+`BeforeToolCallEvent` hook cancelling `advance_step` in code — with the reason in plain
+words and the photo it is waiting for. *See what it did* then shows the two halves
+separately: **You — asked to move on without sending a photo**, then **Gate (code, not
+the model) — refused**. It is the only way to reach that refusal from a browser, since
+*Next step* appears only after a photo has passed. It costs nothing: `advance` calls no
+model and is not rate-limited.
+
 | Endpoint | What it does |
 |---|---|
 | `POST /api/demo/jobs` | start the demo job on the packaged start photo |
 | `POST /api/jobs/{id}/demo-photo` (`which=wrong\|right`) | send a packaged photo to the real Verifier |
+| `POST /api/jobs/{id}/advance` (`intent=skip`) | ask to move on with no photo behind it — the gate refuses, and the ask is on the trace |
 | `GET /api/jobs/{id}/trace?view=human` | who did what, what came back, why — no paths, no ids |
 | `GET /api/jobs/{id}/trace?view=raw` | the operator's log, behind the page's "raw" link |
 

@@ -171,6 +171,15 @@ def humanize_row(r: dict) -> dict:
         )
     elif event == "verdict":
         out = _verdict(r)
+    elif event == "skip_attempt":
+        # The person pressed "I did it" and sent nothing. On its own this row proves
+        # only that they asked; the Gate row right under it is what actually happened.
+        out = _row(
+            "You",
+            "Asked to move on without sending a photo",
+            f"Wanted step {r.get('step_id')} closed on your word alone",
+            tone="bad",
+        )
     elif event == "gate_block":
         out = _row(
             "Gate (code, not the model)",
