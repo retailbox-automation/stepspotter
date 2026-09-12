@@ -645,12 +645,14 @@ gone still bills for provisioned memory.
   writes a stream per invocation, tool calls included. OpenTelemetry *traces* are still
   off: that needs `aws-opentelemetry-distro` and `opentelemetry-instrument python -m
   stepspotter.agentcore_entry` as the container command. Untried.
-* **The image floats.** `pyproject.toml` asks for `strands-agents>=1.54.0`, so the
-  deployed ARM64 image resolved **1.55.0** while the local venv is on 1.54.0 — i.e. the
-  thing running in AWS is not byte-identical to the thing every local test ran against.
-  Pin the version in `pyproject.toml` before a deploy anyone depends on; left floating
-  here because changing a dependency floor is the repo owner's call, not the deploy
-  lane's.
+* **The image no longer floats (fixed 2026-09-12).** `pyproject.toml` used to ask for
+  `strands-agents>=1.54.0`, so the version was decided by the build clock: the ARM64
+  image built on 11.09 resolved **1.55.0**, and a fresh venv on 12.09 resolved 1.55.1.
+  It is now pinned to **`==1.55.0`** — the version this image runs — and the full
+  offline suite (195 passed, 1 skipped) was run against exactly that pin. The next
+  rebuild therefore reproduces what is deployed instead of whatever PyPI has that day.
+  `strands-agents-tools` is still a floor (`>=0.8.7`); pin it the same way if a build
+  ever surprises you.
 * **The web deployment is single-instance by choice.** `stepspotter-single` is min 1 /
   max 1 so that `/tmp` state stays on one instance. Raising `MaxSize` without the S3
   store first will scatter jobs across instances and produce 404s.
