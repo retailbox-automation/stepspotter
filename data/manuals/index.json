@@ -1,0 +1,38 @@
+{
+  "_about": "Hand-checked model -> manual URL. Read by stepspotter.research before any search engine, and shipped inside the container image (COPY data/manuals). Keys are research.slug(guess_product(task)): lowercase brand and model, non-alphanumerics collapsed to one dash.",
+  "_checked": "2026-09-11",
+  "_how_checked": "curl -sSL -A '<desktop UA>' -o /dev/null -w '%{http_code} %{content_type} %{size_download}' <url>. Only entries that came back 200 with a PDF content type are listed under \"manuals\".",
+  "manuals": {
+    "westinghouse-epx3030": {
+      "url": "https://cdn.westinghouseoutdoorpower.com/owners_manuals/ePX3030_manual_web.pdf",
+      "what": "Westinghouse ePX3030 electric pressure washer, owner's manual (assembly on pages 10-14)",
+      "host": "the manufacturer's own CDN",
+      "checked": "2026-09-11",
+      "result": "200 application/pdf 11227297 bytes",
+      "excerpt_cached": true
+    },
+    "ryobi-ry31012": {
+      "url": "https://images.thdstatic.com/catalog/pdfImages/9f/9fcec3ed-a85b-415a-b2cc-89cc1a79994c.pdf",
+      "what": "Ryobi RY31012 12 in. surface cleaner attachment, operator's sheet (995000011 REV:01, English pages 1-2)",
+      "host": "Home Depot's CDN, hosting the Techtronic/Ryobi document itself; ryobitools.com has no direct PDF for this accessory",
+      "checked": "2026-09-11",
+      "result": "200 application/pdf 2543503 bytes",
+      "excerpt_cached": true
+    },
+    "legrand-en0800": {
+      "url": "https://assets-us-01.kc-usercontent.com/ac3a0e75-5aa5-00ab-8ef5-b054c7b6f543/40958988-7cfd-48fe-a17b-f6b762523c73/ON-Q%20Structured%20Wiring%20&%20Connectivity%20Guide.pdf",
+      "what": "Legrand On-Q structured wiring and connectivity guide; names the EN0800 enclosure and the modules that go in it",
+      "host": "Legrand's own content CDN",
+      "checked": "2026-09-11",
+      "result": "200 application/pdf 4481516 bytes, 28 pages with a text layer",
+      "excerpt_cached": false,
+      "caveat": "a product and connectivity guide, not a step-by-step install manual; it grounds part names, not an assembly order"
+    }
+  },
+  "_not_listed": {
+    "apc-bx1350m": {
+      "why": "no URL we could verify. Schneider/APC answer an automated fetch with HTTP 403 on www.se.com and www.apc.com, apcmedia.com 403s, and the 990-5813A file path on download.schneider-electric.com returns 404 (all checked 2026-09-11). The copies a search turns up sit on retailer and marketplace hosts, which is not the maker's document.",
+      "effect": "an APC BX1350M lookup falls through to the search engines like any unlisted model, and says so in the trace."
+    }
+  }
+}

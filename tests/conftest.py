@@ -1,5 +1,5 @@
-"""Shared fixtures. Tests never write into the repo's data/ dir and never call a model
-unless they are marked `integration`.
+"""Shared fixtures. Tests never write into the repo's data/ dir, never read the manual
+cache the repo ships, and never call a model unless they are marked `integration`.
 """
 
 import os
@@ -36,6 +36,11 @@ def isolated_data(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("STEPSPOTTER_DATA", str(tmp_path / "data"))
     monkeypatch.setenv("STEPSPOTTER_RESEARCH", "0")
+    # The repo ships a read-only manual cache (data/manuals/) that the container image
+    # copies in, and research.py reads it when the writable cache misses. A test must
+    # not silently pass because the real ePX3030 answer was sitting there: point the
+    # bundled dir at a path that does not exist. A test that wants it sets it itself.
+    monkeypatch.setenv("STEPSPOTTER_MANUALS", str(tmp_path / "no-bundled-cache"))
     yield tmp_path / "data"
 
 

@@ -122,7 +122,7 @@ CHAT_HTML = r"""<!doctype html>
   button.act{display:block;width:100%;margin-top:9px;border:0;border-radius:14px;padding:16px;
        background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:17px}
   button.act.danger{background:var(--stop)}
-  button.act:disabled{opacity:.45}
+  button.act:disabled,button.ghost:disabled{opacity:.45}
   .askrow{display:flex;gap:8px;margin-top:9px;align-items:center}
   .askrow input{flex:1 1 auto;min-width:0;border:1px solid var(--line);border-radius:999px;
                 padding:11px 14px;font:inherit;font-size:15px;background:#fff;color:var(--ink)}
@@ -130,6 +130,17 @@ CHAT_HTML = r"""<!doctype html>
                  border-radius:999px;padding:11px 14px;font:inherit;font-size:15px}
   .hint{color:var(--dim);font-size:13px;margin:8px 2px 0;text-align:center}
   .err{color:var(--avoid);font-size:14px;margin:8px 2px 0}
+
+  /* ---- the no-camera demo: a judge with ten minutes and no panel ---- */
+  /* Two buttons instead of one, and only here. The one-action rule is a rule about
+     someone standing in front of an open panel with a phone in one hand; a judge at a
+     desk has no camera to open, and the refusal is the thing they came to see, so both
+     packaged photos have to be reachable without guessing which to press first. */
+  button.ghost{display:block;width:100%;margin-top:9px;border:1px solid var(--line);
+       border-radius:14px;padding:15px;background:#fff;color:var(--ink);font:inherit;
+       font-weight:600;font-size:16px}
+  .democap{color:var(--dim);font-size:13px;margin:4px 2px 0;text-align:center}
+  .trydemo{margin-top:9px}
 
   /* ---- typing + trace sheet ---- */
   .typing{display:flex;gap:4px;padding:14px}
@@ -170,11 +181,21 @@ CHAT_HTML = r"""<!doctype html>
       <span>&#128247;</span><span id="shotText">Take a photo of the thing</span>
     </label>
     <input id="startPhoto" type="file" accept="image/*" capture="environment" class="hide">
+    <button class="ghost trydemo hide" id="demoBtn">Try a demo job</button>
+    <p class="democap hide" id="demoTask"></p>
   </div>
 
   <!-- running mode: exactly one action, named after what happens -->
   <button class="act" id="actBtn">Plan my steps</button>
   <input id="stepPhoto" type="file" accept="image/*" capture="environment" class="hide">
+
+  <!-- demo mode: the two packaged photos stand in for the camera, nothing else changes -->
+  <div class="hide" id="demoBar">
+    <button class="ghost" id="demoWrongBtn">Send the wrong photo</button>
+    <p class="democap" id="demoWrongCap"></p>
+    <button class="act" id="demoRightBtn">Send the right photo</button>
+    <p class="democap" id="demoRightCap"></p>
+  </div>
 
   <div class="askrow hide" id="askRow">
     <input id="ask" placeholder="Ask a question about this step">
@@ -195,7 +216,7 @@ CHAT_HTML = r"""<!doctype html>
 
 <script>
 const $ = (id) => document.getElementById(id);
-let JOB = null, SHOWN = 0, MODE = "start", BUSY = false;
+let JOB = null, SHOWN = 0, MODE = "start", BUSY = false, DEMO = null;
 
 const esc = (s) => (s==null?"":String(s)).replace(/[&<>"]/g,
   c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -349,6 +370,12 @@ function composer(c){
   MODE = c.action || "start";
   $("startBox").classList.add("hide");
   $("askRow").classList.toggle("hide", !c.can_ask);
+  // A demo job has no camera behind it, so while a photo is what is wanted the two
+  // packaged photos stand where the one action button stands. Every other state of
+  // the composer is identical to a job started from a phone.
+  const demoPhoto = !!(JOB && JOB.demo) && MODE === "photo";
+  $("demoBar").classList.toggle("hide", !demoPhoto);
+  $("actBtn").classList.toggle("hide", demoPhoto);
   const btn = $("actBtn");
   btn.textContent = c.label || "Next";
   btn.classList.toggle("danger", MODE === "escalate");
@@ -366,6 +393,10 @@ function startMode(){
            + "one step at a time, drawn on your own photo."});
   $("startBox").classList.remove("hide");
   $("askRow").classList.add("hide");
+  $("demoBar").classList.add("hide");
+  $("actBtn").classList.remove("hide");
+  $("actBtn").disabled = false;
+  $("demoBtn").disabled = false;
   $("actBtn").textContent = "Plan my steps";
   $("actBtn").classList.remove("danger");
   $("hint").textContent = "One step at a time. Nothing is marked done without a photo.";
@@ -391,11 +422,26 @@ async function doStart(){
   const fd = new FormData(); fd.append("task", task); fd.append("photo", file);
   $("hint").textContent = "Looking at your photo. This takes about half a minute.";
   typing(true);
-  const created = await api("/api/jobs", {method:"POST", body:fd});
+  await planned(await api("/api/jobs", {method:"POST", body:fd}));
+}
+
+// A job exists. Drop the echo, put its id in the URL so a locked phone can come back,
+// and let the server's feed be the whole transcript from here on.
+async function planned(created){
   history.replaceState(null, "", "?job=" + created.job_id);
   JOB = created; SHOWN = 0; $("feed").innerHTML = "";
   $("hint").textContent = "";
   await refresh();
+}
+
+async function doDemoPhoto(which, btn){
+  BUSY = true; btn.disabled = true; clearFail();
+  typing(true);
+  try { await api("/api/jobs/" + JOB.job_id + "/demo-photo",
+                  {method:"POST", body:new URLSearchParams({which:which})});
+        await refresh(); }
+  catch(err){ typing(false); fail(err.message); }
+  finally { BUSY = false; btn.disabled = false; }
 }
 
 async function doPhoto(file){
@@ -460,6 +506,41 @@ $("feed").addEventListener("click", async (e) => {
   finally { BUSY = false; }
 });
 
+// ---- the demo: same planner, same verifier, same gate, photos from the repo ----
+$("demoBtn").addEventListener("click", async () => {
+  if(BUSY) return;
+  BUSY = true; $("demoBtn").disabled = true; clearFail();
+  node({from:"you", kind:"text", text:(DEMO && DEMO.task) || "Run the demo job"});
+  $("hint").textContent = "Looking at the photo from the repo. This takes about half a minute.";
+  typing(true);
+  try { await planned(await api("/api/demo/jobs", {method:"POST"})); }
+  catch(err){ typing(false); fail(err.message); $("demoBtn").disabled = false; }
+  finally { BUSY = false; }
+});
+$("demoWrongBtn").addEventListener("click", () => {
+  if(!BUSY && JOB) doDemoPhoto("wrong", $("demoWrongBtn"));
+});
+$("demoRightBtn").addEventListener("click", () => {
+  if(!BUSY && JOB) doDemoPhoto("right", $("demoRightBtn"));
+});
+
+// The offer only appears if the three photos are actually in the install: a button
+// that 503s is worse than no button, and the labels come from the server so the page
+// never hard-codes which photo is the wrong one.
+async function loadDemo(){
+  try { DEMO = await api("/api/demo"); } catch(err){ DEMO = null; }
+  const on = !!(DEMO && DEMO.available);
+  $("demoBtn").classList.toggle("hide", !on);
+  $("demoTask").classList.toggle("hide", !on);
+  if(!on) return;
+  $("demoTask").textContent = "No panel in front of you? This runs the real planner, the "
+    + "real verifier and the real gate on a photo shipped in the repo.";
+  $("demoWrongBtn").textContent = DEMO.buttons.wrong.label;
+  $("demoWrongCap").textContent = DEMO.buttons.wrong.caption;
+  $("demoRightBtn").textContent = DEMO.buttons.right.label;
+  $("demoRightCap").textContent = DEMO.buttons.right.caption;
+}
+
 $("askBtn").addEventListener("click", doAsk);
 $("ask").addEventListener("keydown", e => { if(e.key === "Enter") doAsk(); });
 
@@ -484,7 +565,8 @@ $("closeSheet").addEventListener("click", () => $("sheet").classList.remove("on"
 
 // A phone locks, the tab dies, someone comes back later. ?job=<id> restores the whole
 // conversation, because the conversation lives on the server, not in this page.
-(async function resume(){
+(async function boot(){
+  await loadDemo();
   const id = new URLSearchParams(location.search).get("job");
   if(!id) return startMode();
   try { const f = await api("/api/jobs/" + id + "/feed"); SHOWN = 0; draw(f); }

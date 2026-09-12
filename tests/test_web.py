@@ -92,7 +92,7 @@ def test_healthz(client):
 
 
 def test_page_serves_and_mentions_the_gate_words(client):
-    body = client.get("/").text
+    body = client.get("/steps").text
     assert "StepSpotter" in body and "I did it — take photo" in body
 
 
@@ -195,5 +195,52 @@ def test_the_page_is_told_where_the_step_came_from(client):
         "https://www.youtube.com/watch?v=abc",
     ]
     # and the page has somewhere to put both
-    body = client.get("/").text
+    body = client.get("/steps").text
     assert 'id="stepSource"' in body and 'id="manualLine"' in body
+
+
+# ------------------------------------------------------- the first screen
+# A judge opens form B with ten minutes, no panel in front of them and no idea what
+# this is. Before this, that screen was a heading and two file inputs — no explanation,
+# no link to the code, no way in without a photo of a low-voltage panel.
+# (Form B now lives at /steps; "/" is the chat master — see test_chat_ui.py.)
+def test_the_first_screen_says_what_this_is(client):
+    body = client.get("/steps").text
+    assert "one step at a time" in body
+    assert "The next step stays locked" in body
+    assert "a photo proves the last" in body
+
+
+def test_the_first_screen_links_to_the_repository(client):
+    from stepspotter.web.page import REPO_URL
+
+    assert REPO_URL == "https://github.com/retailbox-automation/stepspotter"
+    body = client.get("/steps").text
+    assert f'href="{REPO_URL}"' in body and "Source code on GitHub" in body
+
+
+def test_the_video_link_renders_only_once_there_is_a_video():
+    """An empty constant must leave no dead link behind — a broken promise is worse."""
+    from stepspotter.web.page import render_page
+
+    assert "Watch the 3-minute demo" not in render_page(video_url="")
+    with_video = render_page(video_url="https://youtu.be/abc123")
+    assert 'href="https://youtu.be/abc123"' in with_video
+    assert "Watch the 3-minute demo" in with_video
+
+
+def test_the_first_screen_offers_the_demo_and_the_waiting_stages(client):
+    body = client.get("/steps").text
+    assert "Try a demo job" in body
+    assert "Send the wrong photo" in body and "Send the right photo" in body
+    # the stage lines that replace 35 seconds of the word "Working…"
+    for stage in ("Looking at your photo…", "Writing the steps…", "Checking your photo…"):
+        assert stage in body
+    assert "Usually 20–40 seconds" in body
+
+
+def test_a_long_manual_url_cannot_push_the_page_sideways(client):
+    """Overflow fix for a 390px phone: the URL breaks, it does not set the width."""
+    body = client.get("/steps").text
+    assert "overflow-wrap:anywhere" in body
+    assert "#manualLine a{display:inline-block;max-width:100%" in body

@@ -11,14 +11,18 @@
 # is not linux/arm64, and an x86 build only fails after it has been pushed to ECR.
 FROM --platform=linux/arm64 python:3.12-slim
 
+# Same split as the web image: /tmp is writable and disposable, /app/data/manuals is
+# the manual cache baked in at build time and read when the network says no.
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PORT=8080 \
-    STEPSPOTTER_DATA=/tmp/stepspotter
+    STEPSPOTTER_DATA=/tmp/stepspotter \
+    STEPSPOTTER_MANUALS=/app/data/manuals
 
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY data/manuals ./data/manuals
 # .[agentcore] adds bedrock-agentcore, which brings the /invocations + /ping server.
 RUN pip install --no-cache-dir ".[agentcore]" \
  && useradd --create-home --uid 10001 spotter

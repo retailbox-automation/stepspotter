@@ -160,6 +160,12 @@ class JobService:
             pages=list(found.manual_pages),
             videos=[v.url for v in found.videos],
             note=found.note,
+            # Where the manual came from, and what was tried before it. Without these
+            # two a run that quietly fell back to "no manual" reads on the trace like
+            # a grounded one — which is the failure this whole ladder exists to stop.
+            source=found.source,
+            source_words=research.where(found),
+            trail=list(found.trail),
         )
         return found
 

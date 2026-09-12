@@ -120,7 +120,76 @@ def test_chat_page_is_its_own_form_and_keeps_the_camera(client):
     assert 'capture="environment"' in body  # the rear camera, not a file picker
     assert "Ask a question about this step" in body  # form A's whole point
     assert "screen-step" not in body  # form B's screen stack is not in here
-    assert client.get("/").status_code == 200  # and form B still serves
+    assert client.get("/steps").status_code == 200  # and form B still serves
+
+
+# The decision this branch exists to offer: what does a phone land on. Form A answers
+# "/" now, and form B is not retired — it keeps a path of its own so the two can be
+# opened side by side before anything is thrown away.
+def test_the_chat_master_is_what_a_phone_lands_on(client):
+    root = client.get("/")
+    assert root.status_code == 200
+    assert root.text == client.get("/chat").text  # one page, two ways in
+    assert "Ask a question about this step" in root.text
+
+
+def test_form_b_is_still_whole_at_its_own_path(client):
+    steps = client.get("/steps")
+    assert steps.status_code == 200
+    assert steps.text == client.get("/jobs").text
+    assert "I did it — take photo" in steps.text  # the screen stack, intact
+    assert steps.text != client.get("/").text  # and it is not the chat
+
+
+# --------------------------------------------------------------------------- demo
+# A judge has ten minutes and no low-voltage panel in front of them. Without this the
+# chat's first screen is a dead end for everyone who cannot photograph a panel.
+def test_the_chat_offers_the_demo_and_takes_its_words_from_the_server(client):
+    body = client.get("/chat").text
+    assert 'id="demoBtn"' in body and "Try a demo job" in body
+    # the labels/captions of the two photos are fetched, never written into the page
+    assert "DEMO.buttons.wrong.label" in body and "DEMO.buttons.right.caption" in body
+    assert "/api/demo" in body and "/demo-photo" in body
+    # and the offer is hidden unless the install actually has the photos
+    assert 'classList.toggle("hide", !on)' in body
+
+
+def test_the_demo_runs_the_whole_refuse_then_pass_through_the_chat_feed(client):
+    """The same walk a judge makes: demo job, wrong photo refused, right photo passes.
+
+    Every call here is the one the page makes. Nothing about the verdicts is faked by
+    the page: they arrive as feed messages built from the job's trace.
+    """
+    jid = client.post("/api/demo/jobs").json()["job_id"]
+
+    opened = _feed(client, jid)
+    assert opened["job"]["demo"] is True  # this is what swaps the camera for two buttons
+    assert _kinds(opened) [:2] == ["task", "photo"]  # the packaged photo opens the feed
+    assert opened["composer"]["action"] == "photo"
+
+    wrong = client.post(f"/api/jobs/{jid}/demo-photo", data={"which": "wrong"})
+    assert wrong.status_code == 200
+    refused = [m for m in _feed(client, jid)["messages"] if m["kind"] == "verdict"][-1]
+    assert refused["passed"] is False
+
+    right = client.post(f"/api/jobs/{jid}/demo-photo", data={"which": "right"})
+    assert right.status_code == 200
+    feed = _feed(client, jid)
+    assert [m for m in feed["messages"] if m["kind"] == "verdict"][-1]["passed"] is True
+    assert feed["composer"]["action"] == "advance"
+
+    # the refusal is still above the pass, which is the whole reason to show a judge this
+    verdicts = [m["passed"] for m in feed["messages"] if m["kind"] == "verdict"]
+    assert verdicts == [False, True]
+
+    client.post(f"/api/jobs/{jid}/advance")
+    steps = [m for m in _feed(client, jid)["messages"] if m["kind"] == "step"]
+    assert [m["step_number"] for m in steps] == [1, 2]
+
+
+def test_a_demo_photo_the_server_does_not_ship_is_refused_not_guessed(client):
+    jid = client.post("/api/demo/jobs").json()["job_id"]
+    assert client.post(f"/api/jobs/{jid}/demo-photo", data={"which": "sideways"}).status_code == 400
 
 
 def test_the_page_lets_someone_try_to_skip_so_the_code_can_refuse(client):
