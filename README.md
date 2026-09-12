@@ -242,7 +242,7 @@ polite.
 | Piece | Status |
 |---|---|
 | Spikes A + B (Verifier structured output, Gate `BeforeToolCall` hook, live Bedrock) | ✅ Done — `spikes/SPIKE-A-RESULT.md`, `spikes/SPIKE-B-RESULT.md` |
-| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → from a fresh clone, **184 passed, 7 skipped** with the `agentcore` extra and **171 passed, 8 skipped** without it; on the machine that also holds the raw photo archive, 190 / 1 and 177 / 2 |
+| Core (Planner, Marker, Verifier, Gate, Guide, models, store) | ✅ Done — `src/stepspotter/`; `python -m pytest -q` → from a fresh clone, **189 passed, 7 skipped** with the `agentcore` extra and **176 passed, 8 skipped** without it; on the machine that also holds the raw photo archive, 195 / 1 and 177 / 2 |
 | Web UI (phone-first, FastAPI, camera capture) | ✅ Done — `src/stepspotter/web/`; a camera-free **Try a demo job** button for judges, a readable *See what it did* trace, and per-address + per-day spend caps in front of the two endpoints that call a model (`src/stepspotter/web/limits.py`, `docs/OPERATIONS-JUDGING.md`) |
 | Manual research (find the maker's PDF, ground the plan, cite the page) | ✅ Done — `src/stepspotter/research.py`, `docs/research-epx3030-2026-09-09.md` |
 | Eval harness + smoke fixtures | ✅ Done — `src/stepspotter/evalharness.py`, `fixtures/onq-keystone-smoke/`; published run: `docs/eval-results/2026-09-09.md` |
@@ -260,7 +260,7 @@ tested on 3.11 or older.
 git clone https://github.com/retailbox-automation/stepspotter && cd stepspotter
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-python -m pytest -q      # 171 passed, 8 skipped — no AWS account, no credentials, no network
+python -m pytest -q      # 176 passed, 8 skipped — no AWS account, no credentials, no network
 ```
 
 That is the whole cold start, and those numbers are from an actual fresh clone, not
@@ -273,7 +273,7 @@ Add the AgentCore door as well if you want those thirteen tests to run too:
 
 ```bash
 pip install -e ".[dev,agentcore]"
-python -m pytest -q                      # 184 passed, 7 skipped from a fresh clone
+python -m pytest -q                      # 189 passed, 7 skipped from a fresh clone
 python -m pytest -q tests/test_gate.py   # 6/6 — the Gate contract on its own
 ```
 
