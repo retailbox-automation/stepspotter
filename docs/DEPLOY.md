@@ -64,7 +64,7 @@ Both images are built and pushed as of 2026-09-09: the web image runs on App Run
 (`--platform linux/amd64`) and the Guide image runs on AgentCore Runtime
 (`--platform linux/arm64`, `Dockerfile.agentcore`). See **What is deployed right now**.
 
-## What is deployed right now (2026-09-11)
+## What is deployed right now (2026-09-13)
 
 Both halves are live in **us-east-1**, account `7620****7428`, paid from the hackathon
 AWS credits. Everything below was read back from AWS with `describe`/`get` calls, not
@@ -74,7 +74,7 @@ from the exit code of the command that created it.
 |---|---|---|
 | Web UI (phone-first) | App Runner service `stepspotter` | **https://w7ihmvgxxj.us-east-1.awsapprunner.com** |
 | Guide agent | AgentCore Runtime `stepspotter_guide`, id `stepspotter_guide-Af1MWv8fnL`, version 3 | `arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL` |
-| Web image | ECR `stepspotter:web` — linux/amd64, 127.9 MB, `sha256:5cf39d91…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
+| Web image | ECR `stepspotter:web` — linux/amd64, 128.0 MB, `sha256:5db1cd06…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
 | Guide image | ECR `stepspotter-agentcore:guide` — linux/arm64, `sha256:0e43ad74…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore` |
 | Pull role | IAM `stepspotter-apprunner-ecr-access` (`AWSAppRunnerServicePolicyForECRAccess`, trusts `build.apprunner.amazonaws.com`) | IAM |
 | Container role | IAM `stepspotter-apprunner-instance` (inline `stepspotter-bedrock-invoke`, trusts `tasks.apprunner.amazonaws.com`) | IAM |
@@ -89,6 +89,57 @@ from the exit code of the command that created it.
 Bedrock through a role: `AWS_ACCESS_KEY_ID` is unset in App Runner's environment, and
 the first live job on that URL planned nine steps off a real photo — which only works
 if `bedrock:InvokeModel` reached the model through `stepspotter-apprunner-instance`.
+
+## Redeploy of 2026-09-13 (15:45Z) — the Ryobi blower manual, baked
+
+The gutter shoot needs the blower's manual to resolve without a search engine, the way
+the pressure washer already does: DuckDuckGo answered 202 and Brave 429 on 12.09, so a
+live lookup on camera is a coin flip. `data/manuals/ryobi-ry40lb01k.json` (assembly
+pages 7–9) now ships inside the image alongside the ePX3030 excerpt, plus the day's doc
+and diagram edits. Commit `0767ba3`. **No source file changed** — this is data and docs,
+so the served HTML is byte-identical to the previous build and cannot be used to tell
+the two apart; the digest and the boot line are what identify this one.
+
+| | Previous (rollback point) | Now live |
+|---|---|---|
+| `stepspotter:web` | `sha256:9eb60a48…`, also tagged **`web-rollback-20260913`** | `sha256:5db1cd06…` |
+| AgentCore Runtime | version 3, `guide` = `sha256:0e43ad74…` | **untouched** — not part of this push |
+
+The rollback tag was read back with `describe-images` after the `put-image`, not taken
+from the put's own response. To undo, follow the rollback commands below with
+`…-20260913` in place of `…-20260911`.
+
+### What was checked (failures, not successes)
+
+Error counts were taken **before** the deploy and again after, with the same command:
+
+| Log group | Before (120 min) | After (deploy start → +8 min) |
+|---|---|---|
+| `/aws/apprunner/.../application` | 731 events, **0** ERROR/Traceback/Exception/Timeout, **0** 5xx | 106 events, **0** and **0** 5xx |
+| `/aws/apprunner/.../service` | 0 events, **0** | 13 events, **0** |
+
+* **The baked manual answers with no network at all.** The pushed image, run under
+  `--network none`, resolved *Ryobi RY40LB01K* to `status: found`, `source: bundled`,
+  pages **7, 8, 9**; the ePX3030 still came back `bundled`, pages 10–14 (the regression
+  control); and *APC BX1350M* — a model deliberately absent from the index — came back
+  `not_found`, `source: none`, `usable: False`. The probe can fail, which is what makes
+  the two positives evidence. Note the caveat below: this is `research_product()`, not
+  `find_manual()`.
+* **The image probed is the image serving.** buildx exported manifest
+  `sha256:5db1cd06…`, `docker push` reported the same digest, and `describe-images` on
+  `:web` reads it back — so the artifact those offline probes ran against is byte-for-byte
+  what App Runner pulled.
+* **A new container really came up.** `START_DEPLOYMENT` reported `SUCCEEDED` at
+  **15:47:27Z**, and the application log carries a fresh `Started server process [1]` /
+  `Uvicorn running on http://0.0.0.0:8080` after 15:45:03Z.
+* **Nothing was spent.** `GET /api/jobs/limits/trace` answered `jobs_today: 0`,
+  `tracked_addresses: 0`, re-initialised at 15:45:47Z — no job was started during this
+  deploy, so the 6-per-hour allowance is intact for the shoot. `/healthz` answered
+  **200** on eight probes over four minutes (0.14–0.25 s).
+
+Not proven here, and deliberately: that the *hosted* service answers the Ryobi lookup
+from the bundled copy. That costs a job start (three Bedrock calls) and the hour's
+allowance was being held for filming. The offline probe above is on the identical image.
 
 ## Redeploy of 2026-09-11 (second, 15:00Z) — the four-branch merge
 
