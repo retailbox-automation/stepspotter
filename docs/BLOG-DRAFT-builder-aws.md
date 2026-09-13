@@ -37,7 +37,7 @@ class StepGate(HookProvider):
                 "Send a photo of the finished step and I will verify it first."
 ```
 
-Two details I got from introspecting the running SDK (strands-agents 1.54.0) rather
+Two details I got from introspecting the running SDK (strands-agents 1.55.0) rather
 than from docs. `cancel_tool` takes a **string**, not a boolean — the string becomes the
 tool result the model reads back, so the refusal the user sees is my text, not a
 paraphrase of an error. And the event is frozen against everything except `cancel_tool`,
@@ -80,7 +80,7 @@ allowed to erase something you already have.
 
 ## What the vision model is and isn't good at
 
-Amazon Bedrock (Claude Sonnet 4.6 for vision and planning, Haiku 4.5 for cheap turns)
+Amazon Bedrock (Claude Sonnet 4.6 for vision and planning, via Strands BedrockModel)
 handles verdicts well: eight out of eight correct pass/fail calls on real photos of my
 own panel, including every case where the claimed object wasn't in frame — it refused
 instead of guessing.
@@ -107,5 +107,6 @@ The one thing I'd change: job state lives in the instance's `/tmp`, which is eph
 S3 is the fix, and it's the next commit rather than a lesson.
 
 Built for the Agents for Humans hackathon, Everyday Agents track, on Strands Agents.
+Live app (open it on a phone): https://w7ihmvgxxj.us-east-1.awsapprunner.com
 Code, architecture diagram and the published eval run:
 https://github.com/retailbox-automation/stepspotter

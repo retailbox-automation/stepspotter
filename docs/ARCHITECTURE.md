@@ -95,7 +95,7 @@ flowchart TB
 
     subgraph AWS["Running on AWS"]
         direction LR
-        BR["<b>Amazon Bedrock</b><br/>every vision call, via Strands BedrockModel<br/>Claude Sonnet 4.6 - vision<br/>Claude Haiku 4.5 - cheap turns"]
+        BR["<b>Amazon Bedrock</b><br/>every vision call, via Strands BedrockModel<br/>one model id from STEPSPOTTER_MODEL<br/>default: Claude Sonnet 4.6"]
         AC["<b>Bedrock AgentCore Runtime</b><br/>stepspotter_guide, READY"]
         AR["<b>AWS App Runner</b><br/>the phone web app, live"]
     end

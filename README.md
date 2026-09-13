@@ -301,9 +301,10 @@ Amazon Bedrock calls, and need three things on your account:
 
 3. **Model access** for Anthropic models in the Bedrock console (*Bedrock → Model
    access*), in `us-east-1` — Claude Sonnet 4.6 (`global.anthropic.claude-sonnet-4-6`,
-   the default here) and Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5`). Without
-   it you get the same `ValidationException: Operation not allowed`, which is why it
-   is worth ruling out before you go looking for a bug in this repo.
+   the default here). If you override `STEPSPOTTER_MODEL` with a different model id,
+   request access for that one too. Without it you get the same `ValidationException:
+   Operation not allowed`, which is why it is worth ruling out before you go looking
+   for a bug in this repo.
 
 Run the phone-first web UI (needs the AWS export above):
 
@@ -340,6 +341,19 @@ costs nothing: `advance` calls no model and is not rate-limited.
 | `POST /api/jobs/{id}/advance` (`intent=skip`) | ask to move on with no photo behind it — the gate refuses, and the ask is on the trace |
 | `GET /api/jobs/{id}/trace?view=human` | who did what, what came back, why — no paths, no ids |
 | `GET /api/jobs/{id}/trace?view=raw` | the operator's log, behind the page's "raw" link |
+
+### Testing instructions for judges
+
+- **Live app, no install:** <https://w7ihmvgxxj.us-east-1.awsapprunner.com> — open it on a
+  phone if you can, the photo buttons go straight to the rear camera. No panel handy? Use
+  the **Try a demo job** button above, or attach `fixtures/onq-keystone-smoke/steps/*.jpg`
+  in order to a job you type yourself.
+- **The thing to try:** submit `fixtures/onq-keystone-smoke/redteam/R1-wrong-photo.jpg` as
+  evidence instead. Expected: a "Not done yet" verdict naming what's missing, the step
+  counter unchanged — the gate refusing in code, visible in the trace.
+- **Cold from the repo:** `pip install -e ".[dev]"` then `python -m pytest -q` needs no AWS
+  account; running the live agent (`stepspotter serve`, `stepspotter research`) needs the
+  Bedrock export and model access above.
 
 Run the eval harness against the checked-in smoke fixture (needs the AWS export
 above — it makes real Bedrock calls):

@@ -200,6 +200,6 @@ done) and 3/3 red-team. The 12-step set in `docs/EVAL-PLAN.md` has not been run.
 
 ## Built with
 
-Strands Agents SDK (Python), Amazon Bedrock (Claude Sonnet 4.6 for vision, Claude Haiku 4.5
-for cheap turns), Amazon Bedrock AgentCore Runtime, AWS App Runner, Docker, Python 3.12,
+Strands Agents SDK (Python), Amazon Bedrock (Claude Sonnet 4.6 for vision, via Strands
+BedrockModel), Amazon Bedrock AgentCore Runtime, AWS App Runner, Docker, Python 3.12,
 FastAPI, Pydantic, Pillow, pypdf, pytest.

@@ -27,6 +27,15 @@
       "result": "200 application/pdf 4481516 bytes, 28 pages with a text layer",
       "excerpt_cached": false,
       "caveat": "a product and connectivity guide, not a step-by-step install manual; it grounds part names, not an assembly order"
+    },
+    "ryobi-ry40lb01k": {
+      "url": "https://images.thdstatic.com/catalog/pdfImages/78/7864861c-6dd0-431f-9ebb-cb3c8a05959d.pdf",
+      "what": "Ryobi RY40LB01K 40V Jet Fan Blower kit (550 CFM, 120 MPH), operator's manual (assembly on pages 7-9)",
+      "host": "Home Depot's CDN, hosting the Techtronic/Ryobi document itself",
+      "checked": "2026-09-13",
+      "result": "200 application/pdf 2233776 bytes",
+      "excerpt_cached": true,
+      "caveat": "the PDF's own cover and specs pages say model RY40LB01 (the bare tool), never the 'K' kit suffix; confirmed as the same document via the eBay listing for RY40LB01K quoting an identical 550 CFM / 120 MPH spec"
     }
   },
   "_not_listed": {
