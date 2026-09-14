@@ -153,8 +153,10 @@ with a prompt written to defeat it. The domain shows in the small things: per-st
 conditions, "don't touch" zones, a manual page on every step, and a refusal to plan
 anything involving mains or gas.
 
-**Presentation** — the video runs the real app on a real job in my house, including the
-moment it refuses a wrong photo and the eval miss it doesn't hide.
+**Presentation** — the video is a screen recording of the deployed app running live on real
+photos of my own low-voltage panel: the plan, a wrong photo refused, the gate cancelling a skip
+in code, then the pass that unlocks step two — plus the manual-grounded job and the published
+eval miss it doesn't hide. The voiceover is Amazon Polly.
 
 
 ## Testing instructions for judges

@@ -64,8 +64,8 @@ Not "the agent behaved," but "the agent tried to misbehave and the code stopped 
 
 ## Grounding the plan in the manufacturer's own manual
 
-The first real job was assembling a pressure washer with no assembly video anywhere on
-YouTube — I checked twenty results. The manual, though, is a public PDF. So the agent
+The first real request was a pressure washer with no assembly video anywhere on
+YouTube — I checked twenty results; the machine is still in its box. The manual, though, is a public PDF. So the agent
 now searches for it, downloads it, pulls the assembly pages out with `pypdf`, and hands
 them to the planner with page markers. Every step then cites the page it came from.
 Without that grounding, the same job produced a plan that never mentioned the handle,

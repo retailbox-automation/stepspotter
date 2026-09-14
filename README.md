@@ -8,6 +8,8 @@ until your photo proves the last one was done safely.** Built on **Strands Agent
 photo buttons go straight to the rear camera. (AWS App Runner, us-east-1. The Guide
 agent also runs on Amazon Bedrock AgentCore Runtime — see `docs/DEPLOY.md`.)
 
+**Demo video (2:39):** https://youtu.be/gHYz2I742yY
+
 ## Inspiration
 
 I never owned a home. I grew up in an apartment, and every place I lived in as an
