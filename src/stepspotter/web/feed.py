@@ -64,6 +64,11 @@ def build_feed(state: JobState, rows: list[dict]) -> list[dict]:
     feed: list[dict] = []
     add = feed.append
     plan = state.plan
+    #: How many photos this step has already been judged on. The nth verdict row for
+    #: a step is the nth photo sent for it, and web/app.py files it under that same
+    #: number — so each bubble gets an address of its own instead of every attempt at
+    #: a step sharing one, which a browser answers from cache with the older picture.
+    attempts: dict[int, int] = {}
 
     for row in rows:
         event = row.get("event")
@@ -135,11 +140,12 @@ def build_feed(state: JobState, rows: list[dict]) -> list[dict]:
 
         elif event == "verdict":
             step_no = int(row.get("step_id") or 0)
+            attempt = attempts[step_no] = attempts.get(step_no, 0) + 1
             add(
                 {
                     "from": "you",
                     "kind": "photo",
-                    "url": f"/api/jobs/{state.job_id}/evidence/{step_no}",
+                    "url": f"/api/jobs/{state.job_id}/evidence/{step_no}?attempt={attempt}",
                     "caption": "I did it",
                 }
             )

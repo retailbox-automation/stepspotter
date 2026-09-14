@@ -224,10 +224,24 @@ CHAT_HTML = r"""<!doctype html>
         border-radius:18px 18px 0 0;display:flex;flex-direction:column;max-width:520px;margin:0 auto}
   .sheet h3{margin:0;padding:16px 16px 10px;font-size:18px}
   .sheet p.s{margin:0;padding:0 16px 10px;color:var(--dim);font-size:14px}
-  .sheet ol{flex:1 1 auto;overflow-y:auto;list-style:none;margin:0;padding:0 16px 16px;
-        font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .sheet ol{flex:1 1 auto;overflow-y:auto;list-style:none;margin:0;padding:0 16px 16px}
+  /* Only the operator's view is set in a terminal font. The readable one is prose,
+     and prose in monospace reads as a log whatever the words in it say. */
+  .sheet ol.raw{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
   .sheet li{border-top:1px solid var(--line);padding:9px 0;color:var(--dim);word-break:break-word}
   .sheet li b{color:var(--ink)}
+  .viewswitch{padding:0 var(--s4) var(--s2)}
+  .viewswitch a{color:var(--dim);font-size:var(--f-xs);text-decoration:underline;cursor:pointer}
+  /* One row of the readable trace: who, when, what they did, how it came out, why. */
+  .tr-head{display:flex;gap:var(--s2);align-items:baseline;flex-wrap:wrap}
+  .tr-actor{color:var(--ink);font-weight:700;font-size:var(--f-sm)}
+  .tr-at{color:var(--dim);font-size:var(--f-cap);font-variant-numeric:tabular-nums;
+        margin-left:auto}
+  .tr-what{color:var(--ink);font-size:var(--f-xs)}
+  .tr-result{font-size:var(--f-xs);margin-top:2px}
+  .tr-result.ok{color:var(--act)} .tr-result.bad{color:var(--avoid)}
+  .tr-result.stop{color:var(--stop)}
+  .tr-why{font-size:var(--f-cap);color:var(--dim);margin-top:2px}
   .sheet .close{margin:0 var(--s4) var(--s4);border:1px solid var(--line);
         background:var(--field);color:var(--ink);border-radius:14px;padding:var(--s4);
         font:inherit;font-weight:600}
@@ -285,9 +299,11 @@ CHAT_HTML = r"""<!doctype html>
 
 <div class="sheet" id="sheet"><div class="inner">
   <h3>Everything it did</h3>
-  <p class="s">Plans, cards, photo verdicts and every refusal, in the order they happened.
-     This is the record the answers above come from.</p>
-  <ol id="traceList"></ol>
+  <p class="s">Who did what, what came back, and why — plans, cards, photo verdicts and
+     every refusal, in the order they happened. This is the record the answers above
+     come from.</p>
+  <div class="viewswitch"><a id="rawLink">Show the raw log (for engineers)</a></div>
+  <ol class="trace" id="traceList"></ol>
   <button class="close" id="closeSheet">Close</button>
 </div></div>
 
@@ -710,20 +726,45 @@ $("askBtn").addEventListener("click", doAsk);
 $("ask").addEventListener("keydown", e => { if(e.key === "Enter") doAsk(); });
 
 // ---- the receipts ----------------------------------------------------------
+// The person holding the phone asked "what did it do", not "what did the process
+// write". The server already renders the answer to the first question (trace_view.py):
+// actor, what they did, how it came out, why — with no container paths, job ids or
+// tool inputs in it. That is what this sheet shows. The operator's rows are still
+// here, behind the link at the top, for whoever wants them.
+async function openTrace(){
+  const res = await api("/api/jobs/" + JOB.job_id + "/trace?view=human");
+  $("traceList").className = "trace";
+  $("traceList").innerHTML = res.human.map(r =>
+    '<li><div class="tr-head"><span class="tr-actor">' + esc(r.actor) + '</span>'
+    + '<span class="tr-at">' + esc(r.at) + '</span></div>'
+    + '<div class="tr-what">' + esc(r.what) + '</div>'
+    + (r.result ? '<div class="tr-result ' + esc(r.tone || "") + '">' + esc(r.result) + '</div>' : "")
+    + (r.why ? '<div class="tr-why">' + esc(r.why) + '</div>' : "")
+    + '</li>').join("");
+  $("rawLink").textContent = "Show the raw log (for engineers)";
+}
 $("whyBtn").addEventListener("click", async () => {
   if(!JOB) return fail("Nothing has happened yet.");
+  try { await openTrace(); $("sheet").classList.add("on"); }
+  catch(err){ fail(err.message); }
+});
+$("rawLink").addEventListener("click", async () => {
+  if($("traceList").classList.contains("raw")){
+    try { await openTrace(); } catch(err){ fail(err.message); }
+    return;
+  }
   try {
-    const res = await api("/api/jobs/" + JOB.job_id + "/trace");
-    // Absolute paths from the server are noise on a phone and say more about the
-    // machine than about the job. Keep the last two segments, drop the rest.
+    const res = await api("/api/jobs/" + JOB.job_id + "/trace?view=raw");
+    // Absolute paths are noise even here: keep the last two segments, drop the rest.
     const short = (v) => JSON.stringify(v).replace(
       /"[^"]*\/([^"\/]+\/[^"\/]+)"/g, '"…/$1"');
+    $("traceList").className = "trace raw";
     $("traceList").innerHTML = res.rows.map(r => {
       const rest = Object.keys(r).filter(k => !["at","job_id","event"].includes(k))
         .map(k => k + "=" + short(r[k])).join("  ");
       return "<li><b>" + esc(r.event) + "</b> " + esc(r.at) + "<br>" + esc(rest) + "</li>";
     }).join("");
-    $("sheet").classList.add("on");
+    $("rawLink").textContent = "Back to the readable one";
   } catch(err){ fail(err.message); }
 });
 $("closeSheet").addEventListener("click", () => $("sheet").classList.remove("on"));

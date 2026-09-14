@@ -30,6 +30,18 @@ def _photo_bytes(size=(900, 600), color=(90, 110, 140)) -> bytes:
     return buf.getvalue()
 
 
+#: Two photos that cannot be mistaken for one another once they come back as JPEG.
+WRONG = (200, 40, 40)
+RIGHT = (40, 190, 90)
+
+
+def _avg_color(raw: bytes) -> tuple[int, int, int]:
+    """The mean colour of a returned JPEG — which photo came back, not which bytes."""
+    img = Image.open(io.BytesIO(raw)).convert("RGB").resize((8, 8))
+    px = list(img.getdata())
+    return tuple(round(sum(c[i] for c in px) / len(px)) for i in range(3))
+
+
 def _plan(task: str, photo: str, model_id=None) -> Plan:
     return Plan(
         job_title="Two jacks and a test",
@@ -497,3 +509,91 @@ def test_a_long_wait_says_what_is_happening_rather_than_nothing(client):
     assert "const QUIET_MS = 5000" in body   # quiet first, then speak
     assert '<span class="secs">' in body     # the counter that proves it is alive
     assert "Usually 20–40 seconds" in body
+
+
+# ------------------------------------------------------- one photo per attempt
+# A step is normally attempted twice: the photo that does not prove it, then the one
+# that does. Both bubbles stay in the feed, one above the other. Each has to carry the
+# photo that was actually sent for it — when both point at one address the browser
+# serves the first from its cache, and the green "That is done" ends up sitting over
+# the photo that was refused. That frame is the one a judge looks hardest at.
+def test_each_attempt_at_a_step_keeps_its_own_photo(client):
+    jid = _new_job(client)
+    client.post(
+        f"/api/jobs/{jid}/photo",
+        files={"photo": ("wrong.jpg", _photo_bytes(color=WRONG), "image/jpeg")},
+    )
+    client.post(
+        f"/api/jobs/{jid}/photo",
+        files={"photo": ("right.jpg", _photo_bytes(color=RIGHT), "image/jpeg")},
+    )
+
+    sent = [
+        m for m in _feed(client, jid)["messages"]
+        if m["kind"] == "photo" and m["caption"] == "I did it"
+    ]
+    assert len(sent) == 2
+    assert sent[0]["url"] != sent[1]["url"]  # one address per attempt, not one per step
+
+    first, second = client.get(sent[0]["url"]), client.get(sent[1]["url"])
+    assert first.status_code == 200 and second.status_code == 200
+    assert _avg_color(first.content) == pytest.approx(WRONG, abs=14)
+    assert _avg_color(second.content) == pytest.approx(RIGHT, abs=14)
+
+
+def test_the_evidence_route_answers_by_attempt_and_defaults_to_the_latest(client):
+    jid = _new_job(client)
+    client.post(
+        f"/api/jobs/{jid}/photo",
+        files={"photo": ("wrong.jpg", _photo_bytes(color=WRONG), "image/jpeg")},
+    )
+    client.post(
+        f"/api/jobs/{jid}/photo",
+        files={"photo": ("right.jpg", _photo_bytes(color=RIGHT), "image/jpeg")},
+    )
+
+    one = client.get(f"/api/jobs/{jid}/evidence/1?attempt=1")
+    two = client.get(f"/api/jobs/{jid}/evidence/1?attempt=2")
+    assert _avg_color(one.content) == pytest.approx(WRONG, abs=14)
+    assert _avg_color(two.content) == pytest.approx(RIGHT, abs=14)
+    # no attempt named: the most recent one, which is what the verdict panel wants
+    latest = client.get(f"/api/jobs/{jid}/evidence/1")
+    assert _avg_color(latest.content) == pytest.approx(RIGHT, abs=14)
+    assert client.get(f"/api/jobs/{jid}/evidence/1?attempt=3").status_code == 404
+
+
+# ------------------------------------------------------------------ the why sheet
+# "Everything it did" is read by the person holding the phone. The rows behind it are
+# an operator's log — event names, job ids, tool inputs, container paths — and the
+# server already renders a readable view of them (web/trace_view.py). The sheet has to
+# ask for THAT one; the raw rows stay reachable, one deliberate click away.
+def test_the_why_button_asks_for_the_readable_trace_not_the_operator_log(client):
+    body = client.get("/chat").text
+    assert "/trace?view=human" in body
+    assert "res.human.map" in body
+    for field in ("r.actor", "r.what", "r.result", "r.why"):
+        assert field in body  # the four fields a person reads, drawn as themselves
+    assert "await openTrace()" in body  # the why button opens the readable one
+    # and the operator's rows are behind their own link, not the default
+    assert 'id="rawLink"' in body and "/trace?view=raw" in body
+    assert 'className = "trace raw"' in body
+
+
+def test_the_readable_trace_says_who_did_what_and_shows_no_machine_furniture(client):
+    """Fetched exactly as the sheet fetches it, on the walk the demo takes."""
+    jid = _new_job(client)
+    client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"})  # asked, refused
+    _send(client, jid)  # fails
+    _send(client, jid)  # passes
+    client.post(f"/api/jobs/{jid}/advance")
+
+    payload = client.get(f"/api/jobs/{jid}/trace?view=human").json()
+    assert "rows" not in payload  # the operator log is a separate, deliberate request
+    said = " ".join(
+        f"{r['actor']} {r['what']} {r['result']} {r['why']}" for r in payload["human"]
+    )
+    assert "Asked to move on without sending a photo" in said
+    assert "Gate (code, not the model)" in said and "Refused to move to the next step" in said
+    assert "Allowed \u2014 the photo had passed" in said
+    for machine in ("/", "\\", jid, "tool_input", "evidence-", "step_id"):
+        assert machine not in said, f"{machine!r} leaked into the readable trace"

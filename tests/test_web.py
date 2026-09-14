@@ -310,3 +310,19 @@ def test_the_skip_ask_works_on_the_demo_job_too(isolated_data):
     jid = client.post("/api/demo/jobs").json()["job_id"]
     blocked = client.post(f"/api/jobs/{jid}/advance", data={"intent": "skip"}).json()
     assert blocked["blocked"] is True and blocked["job"]["step_number"] == 1
+
+
+def test_a_job_written_before_attempts_were_numbered_still_shows_its_photo(client):
+    """Live jobs on disk from before this have one ``evidence-NN.jpg`` and no suffix.
+
+    Numbering the attempts must not blank the photo on a job the judges may reopen
+    from a link they already have.
+    """
+    from stepspotter import store
+
+    jid = _new_job(client)["job_id"]
+    (store.cards_dir(jid) / "evidence-01.jpg").write_bytes(_photo_bytes())
+
+    assert client.get(f"/api/jobs/{jid}/evidence/1").status_code == 200
+    assert client.get(f"/api/jobs/{jid}/evidence/1?attempt=1").status_code == 200
+    assert client.get(f"/api/jobs/{jid}/evidence/2").status_code == 404

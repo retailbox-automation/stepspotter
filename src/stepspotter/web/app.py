@@ -16,6 +16,7 @@ Endpoints (all JSON except the two image routes and ``/``):
                                     intent=skip marks an ask with no photo behind it
     POST /api/jobs/{id}/escalate    stop and hand to a person
     GET  /api/jobs/{id}/evidence/N  the photo the person sent for step N
+                                    (?attempt=K for one try at it; the latest by default)
     GET  /api/jobs/{id}/start-photo the photo the job was opened with
     GET  /api/jobs/{id}/card/N      the card for step N (cached; the current step renders)
     GET  /api/jobs/{id}/feed        the chat transcript, rebuilt from the trace
@@ -62,6 +63,49 @@ def _is_demo(job_id: str) -> bool:
     shape on disk and a job saved before this existed still loads.
     """
     return any(r.get("event") == "demo" for r in store.read_trace(job_id))
+
+
+def _evidence_name(step_no: int, attempt: int) -> str:
+    """The photo sent on one try at one step. Numbered, because a step is usually
+    tried twice: the photo that does not prove it, then the one that does. Writing
+    both to ``evidence-NN.jpg`` destroyed the first as soon as the second arrived,
+    so the feed showed the refused photo above the green verdict it had nothing to
+    do with — the browser still had it cached at that one address."""
+    return f"evidence-{step_no:02d}-{attempt:02d}.jpg"
+
+
+def _evidence_attempts(job_id: str, step_no: int) -> int:
+    """How many photos have already been judged for this step.
+
+    Counted off the trace, not off the disk: the feed numbers the bubbles the same
+    way (one per ``verdict`` row, in order), so the two cannot drift apart. A photo
+    whose verdict never came back — the checker raised — leaves no row and is
+    overwritten by the next try, which is right: nothing in the feed points at it.
+    """
+    return sum(
+        1
+        for r in store.read_trace(job_id)
+        if r.get("event") == "verdict" and int(r.get("step_id") or 0) == step_no
+    )
+
+
+def _evidence_file(job_id: str, step_no: int, attempt: int | None) -> Path | None:
+    """The photo for one attempt, or the most recent one when none is named.
+
+    Jobs written before attempts were numbered hold a single ``evidence-NN.jpg``;
+    it answers as attempt 1, so a link a judge already has still shows its photo.
+    """
+    folder = store.cards_dir(job_id)
+    legacy = folder / f"evidence-{step_no:02d}.jpg"
+    if attempt is not None:
+        numbered = folder / _evidence_name(step_no, attempt)
+        if numbered.is_file():
+            return numbered
+        return legacy if attempt == 1 and legacy.is_file() else None
+    numbered_files = sorted(folder.glob(f"evidence-{step_no:02d}-[0-9][0-9].jpg"))
+    if numbered_files:
+        return numbered_files[-1]
+    return legacy if legacy.is_file() else None
 
 
 def _research(job_id: str) -> dict | None:
@@ -229,7 +273,8 @@ def create_app(
         if not raw:
             raise HTTPException(status_code=400, detail="That photo did not arrive. Try again.")
         step_no = state.current + 1
-        dest = save_upload(raw, store.cards_dir(job_id) / f"evidence-{step_no:02d}.jpg")
+        attempt = _evidence_attempts(job_id, step_no) + 1
+        dest = save_upload(raw, store.cards_dir(job_id) / _evidence_name(step_no, attempt))
         try:
             verdict = svc.verify(state, str(dest))
         except Exception as exc:  # noqa: BLE001
@@ -347,10 +392,14 @@ def create_app(
         return {"escalated": True, "message": str(res.get("content")), "job": _summary(_job(job_id))}
 
     @app.get("/api/jobs/{job_id}/evidence/{step_no}")
-    def evidence(job_id: str, step_no: int) -> Any:
+    def evidence(job_id: str, step_no: int, attempt: int | None = None) -> Any:
+        """One try at one step. The feed asks for a numbered attempt, so every bubble
+        has an address of its own and the browser cannot serve an older photo for a
+        newer verdict. Without ``attempt`` this is the latest, which is what the
+        verdict panel on form B wants."""
         _job(job_id)
-        p = store.cards_dir(job_id) / f"evidence-{step_no:02d}.jpg"
-        if not p.is_file():
+        p = _evidence_file(job_id, step_no, attempt)
+        if p is None:
             raise HTTPException(status_code=404, detail="No photo for that step yet.")
         return FileResponse(str(p), media_type="image/jpeg")
 
