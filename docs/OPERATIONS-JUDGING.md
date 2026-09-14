@@ -67,12 +67,18 @@ has never fired is indistinguishable from one that is broken.
 
 `src/stepspotter/web/limits.py`, in front of the only two endpoints that spend money:
 
-| Limit | Default | Env var |
-|---|---|---|
-| New jobs per hour, per address | 6 | `STEPSPOTTER_JOBS_PER_IP_HOUR` |
-| Photo checks per hour, per address | 30 | `STEPSPOTTER_PHOTOS_PER_IP_HOUR` |
-| New jobs per UTC day, whole service | 150 | `STEPSPOTTER_MAX_JOBS_PER_DAY` |
-| Photo checks per UTC day, whole service | 300 | `STEPSPOTTER_MAX_PHOTOS_PER_DAY` |
+| Limit | Default | Live (since 2026-09-14, judging period) | Env var |
+|---|---|---|---|
+| New jobs per hour, per address | 6 | **20** | `STEPSPOTTER_JOBS_PER_IP_HOUR` |
+| Photo checks per hour, per address | 30 | **100** | `STEPSPOTTER_PHOTOS_PER_IP_HOUR` |
+| New jobs per UTC day, whole service | 150 | 150 (unchanged) | `STEPSPOTTER_MAX_JOBS_PER_DAY` |
+| Photo checks per UTC day, whole service | 300 | 300 (unchanged) | `STEPSPOTTER_MAX_PHOTOS_PER_DAY` |
+
+Raised 2026-09-14 (App Runner env update, no image rebuild) so a shared-NAT judging
+crowd doesn't collide on one hourly window; the daily service-wide caps — the ones that
+actually bound the $45 budget — were left untouched. Rollback: reapply the previous
+`RuntimeEnvironmentVariables` map saved at
+[`docs/ops/apprunner-env-before-2026-09-14.json`](ops/apprunner-env-before-2026-09-14.json).
 
 The **demo button counts as the real thing**: it swaps the photo, not the model, so
 `POST /api/demo/jobs` is metered as a job and `POST /api/jobs/<id>/demo-photo` as a

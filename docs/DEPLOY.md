@@ -90,6 +90,70 @@ Bedrock through a role: `AWS_ACCESS_KEY_ID` is unset in App Runner's environment
 the first live job on that URL planned nine steps off a real photo — which only works
 if `bedrock:InvokeModel` reached the model through `stepspotter-apprunner-instance`.
 
+## Runtime env changes 2026-09-14 (15:40Z) — per-address caps raised for judging
+
+App Runner env update, no image rebuild — the running digest (`sha256:e754800a…`,
+`:web`) never changed, only `SourceConfiguration.ImageRepository.ImageConfiguration.RuntimeEnvironmentVariables`.
+Judges likely share AWS's outbound NAT, so one per-address hourly window (`web/limits.py`)
+could throttle several judges as if they were one caller. Raised:
+
+| Env var | Was | Now |
+|---|---|---|
+| `STEPSPOTTER_JOBS_PER_IP_HOUR` | 6 (default) | **20** |
+| `STEPSPOTTER_PHOTOS_PER_IP_HOUR` | 30 (default) | **100** |
+
+The two UTC-day service-wide caps (`STEPSPOTTER_MAX_JOBS_PER_DAY=150`,
+`STEPSPOTTER_MAX_PHOTOS_PER_DAY=300`) — the ones the $45 budget was actually sized
+around — were **not** touched.
+
+The full pre-change `RuntimeEnvironmentVariables` map was read back with
+`describe-service` and saved at
+[`docs/ops/apprunner-env-before-2026-09-14.json`](ops/apprunner-env-before-2026-09-14.json)
+before the update (no secrets were present in that map — App Runner reported
+`RuntimeEnvironmentSecrets: {}` for this service).
+
+### What was checked (failures, not successes)
+
+* `UpdateService` returned `OperationId fb8b47ca…`, `Status OPERATION_IN_PROGRESS`;
+  polled every 20 s, back to **RUNNING** after ~3 minutes.
+* Read back post-update: `describe-service` shows both new variables **and** the
+  original four unchanged (`AWS_DEFAULT_REGION`, `AWS_REGION`, `PORT`, `STEPSPOTTER_DATA`);
+  `ImageIdentifier` is still `stepspotter:web`, `AutoDeploymentsEnabled` still `false`.
+* `GET /healthz` → **200**.
+* Application log carries a fresh `Started server process [1]` / `Uvicorn running on
+  http://0.0.0.0:8080` after the operation completed — a new container, not the old one
+  answering healthz on inertia.
+* Error counts, same command/regex before and after
+  (`Traceback|ERROR|Exception|Timeout|CRITICAL`, `HTTP/1.1" 5\d\d`):
+
+  | Log group | Before (3 h up to the update) | After (update → +~15 min) |
+  |---|---|---|
+  | `/aws/apprunner/.../application` | 1078 events, **0** errors, **0** 5xx | 40 events, **0** and **0** 5xx |
+
+* AgentCore Runtime `stepspotter_guide` was not part of this operation — untouched.
+
+### Rollback (one command)
+
+```bash
+SERVICE_ARN="arn:aws:apprunner:us-east-1:762071317428:service/stepspotter/cee52fc66d5a4e23b40a9088eed84725"
+ENV_JSON=$(python3 -c "
+import json
+d = json.load(open('docs/ops/apprunner-env-before-2026-09-14.json'))
+print(json.dumps(d['Service']['SourceConfiguration']['ImageRepository']['ImageConfiguration']['RuntimeEnvironmentVariables']))
+")
+aws apprunner update-service --service-arn "$SERVICE_ARN" --source-configuration "{
+  \"ImageRepository\": {
+    \"ImageIdentifier\": \"762071317428.dkr.ecr.us-east-1.amazonaws.com/stepspotter:web\",
+    \"ImageRepositoryType\": \"ECR\",
+    \"ImageConfiguration\": {\"Port\": \"8080\", \"RuntimeEnvironmentVariables\": $ENV_JSON}
+  },
+  \"AuthenticationConfiguration\": {\"AccessRoleArn\": \"arn:aws:iam::762071317428:role/stepspotter-apprunner-ecr-access\"},
+  \"AutoDeploymentsEnabled\": false
+}"
+```
+
+---
+
 ## Redeploy of 2026-09-14 (12:01Z) — one photo per attempt, and a readable why sheet
 
 The last web-facing fix before the judging freeze, commit `dd85158`, two bugs both

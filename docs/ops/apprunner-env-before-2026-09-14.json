@@ -1,0 +1,57 @@
+{
+    "Service": {
+        "ServiceName": "stepspotter",
+        "ServiceId": "cee52fc66d5a4e23b40a9088eed84725",
+        "ServiceArn": "arn:aws:apprunner:us-east-1:762071317428:service/stepspotter/cee52fc66d5a4e23b40a9088eed84725",
+        "ServiceUrl": "w7ihmvgxxj.us-east-1.awsapprunner.com",
+        "CreatedAt": "2026-09-09T11:54:02-04:00",
+        "UpdatedAt": "2026-09-09T11:54:02-04:00",
+        "Status": "RUNNING",
+        "SourceConfiguration": {
+            "ImageRepository": {
+                "ImageIdentifier": "762071317428.dkr.ecr.us-east-1.amazonaws.com/stepspotter:web",
+                "ImageConfiguration": {
+                    "RuntimeEnvironmentVariables": {
+                        "AWS_DEFAULT_REGION": "us-east-1",
+                        "AWS_REGION": "us-east-1",
+                        "PORT": "8080",
+                        "STEPSPOTTER_DATA": "/tmp/stepspotter"
+                    },
+                    "Port": "8080"
+                },
+                "ImageRepositoryType": "ECR"
+            },
+            "AutoDeploymentsEnabled": false,
+            "AuthenticationConfiguration": {
+                "AccessRoleArn": "arn:aws:iam::762071317428:role/stepspotter-apprunner-ecr-access"
+            }
+        },
+        "InstanceConfiguration": {
+            "Cpu": "1024",
+            "Memory": "2048",
+            "InstanceRoleArn": "arn:aws:iam::762071317428:role/stepspotter-apprunner-instance"
+        },
+        "HealthCheckConfiguration": {
+            "Protocol": "HTTP",
+            "Path": "/healthz",
+            "Interval": 10,
+            "Timeout": 5,
+            "HealthyThreshold": 1,
+            "UnhealthyThreshold": 5
+        },
+        "AutoScalingConfigurationSummary": {
+            "AutoScalingConfigurationArn": "arn:aws:apprunner:us-east-1:762071317428:autoscalingconfiguration/stepspotter-single/1/62f6d7991d8f40f5804eb8b3830dfb7d",
+            "AutoScalingConfigurationName": "stepspotter-single",
+            "AutoScalingConfigurationRevision": 1
+        },
+        "NetworkConfiguration": {
+            "EgressConfiguration": {
+                "EgressType": "DEFAULT"
+            },
+            "IngressConfiguration": {
+                "IsPubliclyAccessible": true
+            },
+            "IpAddressType": "IPV4"
+        }
+    }
+}
