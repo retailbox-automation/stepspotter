@@ -64,7 +64,7 @@ Both images are built and pushed as of 2026-09-09: the web image runs on App Run
 (`--platform linux/amd64`) and the Guide image runs on AgentCore Runtime
 (`--platform linux/arm64`, `Dockerfile.agentcore`). See **What is deployed right now**.
 
-## What is deployed right now (2026-09-13)
+## What is deployed right now (2026-09-14)
 
 Both halves are live in **us-east-1**, account `7620****7428`, paid from the hackathon
 AWS credits. Everything below was read back from AWS with `describe`/`get` calls, not
@@ -74,7 +74,7 @@ from the exit code of the command that created it.
 |---|---|---|
 | Web UI (phone-first) | App Runner service `stepspotter` | **https://w7ihmvgxxj.us-east-1.awsapprunner.com** |
 | Guide agent | AgentCore Runtime `stepspotter_guide`, id `stepspotter_guide-Af1MWv8fnL`, version 3 | `arn:aws:bedrock-agentcore:us-east-1:7620****7428:runtime/stepspotter_guide-Af1MWv8fnL` |
-| Web image | ECR `stepspotter:web` — linux/amd64, 128.0 MB, `sha256:5db1cd06…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
+| Web image | ECR `stepspotter:web` — linux/amd64, 128.0 MB, `sha256:e754800a…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter` |
 | Guide image | ECR `stepspotter-agentcore:guide` — linux/arm64, `sha256:0e43ad74…` | `<acct>.dkr.ecr.us-east-1.amazonaws.com/stepspotter-agentcore` |
 | Pull role | IAM `stepspotter-apprunner-ecr-access` (`AWSAppRunnerServicePolicyForECRAccess`, trusts `build.apprunner.amazonaws.com`) | IAM |
 | Container role | IAM `stepspotter-apprunner-instance` (inline `stepspotter-bedrock-invoke`, trusts `tasks.apprunner.amazonaws.com`) | IAM |
@@ -89,6 +89,80 @@ from the exit code of the command that created it.
 Bedrock through a role: `AWS_ACCESS_KEY_ID` is unset in App Runner's environment, and
 the first live job on that URL planned nine steps off a real photo — which only works
 if `bedrock:InvokeModel` reached the model through `stepspotter-apprunner-instance`.
+
+## Redeploy of 2026-09-14 (12:01Z) — one photo per attempt, and a readable why sheet
+
+The last web-facing fix before the judging freeze, commit `dd85158`, two bugs both
+visible on the demo walk a judge takes:
+
+* **Every attempt at a step was written to one filename.** `evidence-01.jpg` was
+  overwritten by the next try, and the feed pointed both "I did it" bubbles at the same
+  address — so a browser answered the second from cache and the green *"That looks
+  done"* sat over the photo that had just been refused. That is the single frame this
+  whole project is judged on, showing the wrong thing. Photos are now filed per attempt
+  (`evidence-01-01.jpg`, `-02`), the feed asks for `?attempt=K`, and the route falls
+  back to the latest — and to the old unnumbered file — so links already handed out
+  still open.
+* **"Everything it did" opened the operator's log.** Event names, job ids, tool inputs
+  and container paths, under a button a person presses to ask *why did it say that*.
+  The server already renders the readable view (`web/trace_view.py`); the sheet now
+  asks for it, and the raw rows sit behind *"Show the raw log (for engineers)"*.
+
+| | Previous (rollback point) | Now live |
+|---|---|---|
+| `stepspotter:web` | `sha256:5db1cd06…`, also tagged **`web-rollback-20260914`** | `sha256:e754800a…` |
+| AgentCore Runtime | version 3, `guide` = `sha256:0e43ad74…` | **untouched** — read back as version 3, READY, last updated 2026-09-11 |
+
+The rollback tag was read back with `describe-images` after the `put-image`, not taken
+from the put's own response. To undo, follow the rollback commands below with
+`…-20260914` in place of `…-20260911`.
+
+### What was checked (failures, not successes)
+
+Error counts were taken **before** the deploy and again after, with the same command and
+the same regexes (`Traceback|ERROR|Exception|Timeout|CRITICAL`, and `HTTP/1.1" 5\d\d`):
+
+| Log group | Before (120 min) | After (deploy start → +5 min) |
+|---|---|---|
+| `/aws/apprunner/.../application` | 744 events, **0** ERROR/Traceback/Exception/Timeout, **0** 5xx | 76 events, **0** and **0** 5xx |
+| `/aws/apprunner/.../service` | 0 events, **0** | 13 events, **0** |
+
+Status census after the push: **71 × 200, 1 × 404** — and that 404 is the probe below
+asking for an attempt that does not exist, which is the answer it should get.
+
+* **The image probed is the image serving.** buildx exported manifest
+  `sha256:e754800a…`, `docker push` reported the same digest, and `describe-images` on
+  `:web` reads it back. Before pushing, that image was run locally: the four web modules
+  import, `strands-agents` is **1.55.0**, and under `--network none` the bundled manual
+  cache still answers — *Westinghouse ePX3030* and *Ryobi RY40LB01K* `found` /
+  `source: bundled`, the deliberately-absent *APC BX1350M* `not_found` / `usable: False`.
+  The control fails, which is what makes the two positives mean something.
+* **A new container really came up.** `START_DEPLOYMENT` `bd466678…` reported
+  **SUCCEEDED** at 12:04:00Z, and the application log carries `Started server process [1]`
+  / `Uvicorn running on http://0.0.0.0:8080` at **12:02:29Z**.
+* **The new code is the code serving**, not just a healthy old one: the HTML at `/` now
+  contains `trace?view=human`, `res.human.map` and the `rawLink` element, and zero
+  occurrences of the old bare-`/trace` fetch. A `/healthz` 200 would not have shown that.
+* **The bug is gone on the judges' URL.** One live demo job
+  (`job-20260914-120447-c29d`, 8 steps planned off the packaged panel photo in 30 s),
+  then the wrong photo and the right one through the real Verifier: *"only a close-up of
+  a yellow RJ45 keystone jack"* → refused, then *"the panel interior clearly shows only
+  blue ethernet and coax"* → passed. The feed returned **two different addresses**
+  (`evidence/1?attempt=1` and `?attempt=2`); fetched, they are different files —
+  111 197 B `9c3c4fee…` and 92 706 B `f67a03e8…` — and opened, they are the jack and the
+  panel, each under its own verdict. `evidence/1` with no attempt returns the latest
+  (byte-identical to attempt 2) and `?attempt=3` returns 404.
+* **The why sheet carries nothing from the machine.** `GET …/trace?view=human` on that
+  job returned six rows — You, Researcher, Planner, Checker ×2, Marker — and across all
+  of them: 0 job ids, 0 `/tmp`, 0 `/app`, 0 `.jpg`, 0 `.jsonl`, 0 `evidence-`, 0
+  `step_id`, 0 `tool_input`, and 0 occurrences of `/` in any form.
+* **Nothing else was touched.** AgentCore Runtime `stepspotter_guide-Af1MWv8fnL` reads
+  back as version 3, READY, last updated 2026-09-11, and `stepspotter-agentcore:guide`
+  still points at `sha256:0e43ad74…`.
+
+Cost of the verification: one job start and two photo checks — three Bedrock calls,
+taken against a spoofed `X-Forwarded-For` so the judges' own address keeps its full
+6-per-hour allowance.
 
 ## Redeploy of 2026-09-13 (15:45Z) — the Ryobi blower manual, baked
 
